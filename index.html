@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Rawai System - أحمد مسلم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; margin: 0; }
+        
+        @media print {
+            /* إلغاء أي هوامش تلقائية من المتصفح */
+            @page { 
+                size: A4; 
+                margin: 0 !important; 
+            }
+            
+            /* إجبار المستند على عدم إنشاء صفحات جديدة */
+            html, body {
+                height: 297mm;
+                overflow: hidden;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
+            }
+
+            .no-print { display: none !important; }
+
+            .print-page {
+                width: 210mm; 
+                height: 296mm; /* أصغر بـ 1ملي من الورقة لضمان عدم القفز */
+                position: relative; 
+                overflow: hidden;
+                background-image: url('letterhead.jpg') !important;
+                background-size: 100% 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                page-break-after: avoid !important;
+            }
+        }
+        
+        .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
+        .page-box { width: 210mm; height: 297mm; background: white; background-image: url('letterhead.jpg'); background-size: 100% 100%; position: relative; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+<script type="text/babel">
+    const { useState } = React;
+
+    const App = () => {
+        const [client, setClient] = useState("أحمد مسلم"); 
+        const [ref, setRef] = useState("2024-001");
+        const [items, setItems] = useState([
+            { id: 1, desc: "SK booster box", price: 1000, qty: 0, disc: 0 },
+            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0 },
+            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0 },
+            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0 },
+            { id: 5, desc: "SK repairing gel 50 gm", price: 220, qty: 0, disc: 0 }
+        ]);
+
+        const updateItem = (id, field, val) => {
+            setItems(items.map(i => i.id === id ? {...i, [field]: val} : i));
+        };
+
+        const subtotal = items.reduce((acc, i) => acc + (i.price * i.qty * (1 - i.disc/100)), 0);
+        const vat = subtotal * 0.15;
+        const total = subtotal + vat;
+
+        return (
+            <div className="flex flex-col lg:flex-row">
+                <div className="lg:w-80 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-xl">
+                    <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
+                    <div className="space-y-4 mb-6 text-right">
+                        <input type="text" placeholder="اسم العميل" className="w-full p-2 border rounded text-sm text-right" value={client} onChange={e => setClient(e.target.value)} />
+                        <input type="text" placeholder="رقم العرض" className="w-full p-2 border rounded text-sm text-right" value={ref} onChange={e => setRef(e.target.value)} />
+                    </div>
+                    {items.map(it => (
+                        <div key={it.id} className="mb-4 p-2 bg-slate-50 border rounded text-right">
+                            <p className="text-[10px] font-bold">{it.desc}</p>
+                            <div className="grid grid-cols-2 gap-1 mt-1">
+                                <input type="number" placeholder="الكمية" className="p-1 border text-xs text-center" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
+                                <input type="number" placeholder="خصم %" className="p-1 border text-xs text-center" onChange={e => updateItem(it.id, 'disc', parseFloat(e.target.value)||0)} />
+                            </div>
+                        </div>
+                    ))}
+                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-xl font-black shadow-lg">طباعة العرض</button>
+                </div>
+
+                <div className="flex-1 screen-view">
+                    <div className="page-box print-page">
+                        {/* تضييق الـ Bottom Margin لزيادة الأمان من 4.8cm إلى 5.2cm */}
+                        <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col" dir="ltr">
+                            
+                            <div className="mb-4">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="border-[3px] border-blue-900 px-4 py-1 font-black text-[15px]">
+                                        Quotation No.: <span className="text-blue-900">{ref}</span>
+                                    </div>
+                                    <div className="font-black text-[15px] text-blue-900">
+                                        Date: 2026-02-14
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 text-left">
+                                    <div className="flex justify-start items-center gap-4">
+                                        <span className="font-black text-blue-900 text-[15px] min-w-[65px]">To :</span>
+                                        <span className="border-b border-dotted border-slate-400 flex-1 text-left font-black text-xl h-7">{client}</span>
+                                    </div>
+                                    <div className="flex justify-start items-center gap-4">
+                                        <span className="font-black text-blue-900 text-[15px] min-w-[65px]">From :</span>
+                                        <span className="flex-1 text-left font-black text-lg text-slate-700">Rawai Aljamal Alhaditha Co.</span>
+                                    </div>
+                                    <div className="flex justify-start items-center gap-4">
+                                        <span className="font-black text-blue-900 text-[15px] min-w-[65px]">Subject:</span>
+                                        <span className="font-black text-xl text-slate-800 underline decoration-blue-900 underline-offset-4">SK booster</span>
+                                    </div>
+                                </div>
+                                <p className="text-left font-black mt-4 text-[15px] text-slate-700">Dear Sir,</p>
+                            </div>
+
+                            <table className="w-full text-[14px] border-collapse">
+                                <thead>
+                                    <tr className="bg-blue-900 text-white font-black">
+                                        <th className="p-2.5 border border-blue-800 text-left">Description</th>
+                                        <th className="p-2.5 border border-blue-800">Price SR</th>
+                                        <th className="p-2.5 border border-blue-800">Qty</th>
+                                        <th className="p-2.5 border border-blue-800">Total SR</th>
+                                        <th className="p-2.5 border border-blue-800">% Disc</th>
+                                        <th className="p-2.5 border border-blue-800">Net Price</th>
+                                        <th className="p-2.5 border border-blue-800">Bonus</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {items.map(it => {
+                                        const bonusRule = [{q:50, b:10},{q:30, b:5},{q:20, b:3},{q:10, b:1}].find(r => it.qty >= r.q);
+                                        const netPrice = (it.price * it.qty) * (1 - it.disc/100);
+                                        return (
+                                            <tr key={it.id} className="text-center border-b font-black text-slate-800 h-10">
+                                                <td className="p-1.5 text-left">{it.desc}</td>
+                                                <td className="p-1.5">{it.price}</td>
+                                                <td className="p-1.5 bg-slate-50">{it.qty || '-'}</td>
+                                                <td className="p-1.5">{(it.price * it.qty) || '-'}</td>
+                                                <td className="p-1.5 text-red-600 font-bold">{it.disc ? it.disc + "%" : "-"}</td>
+                                                <td className="p-1.5 text-blue-900">{it.qty ? netPrice.toLocaleString() : '-'}</td>
+                                                <td className="p-1.5 text-green-700">{bonusRule ? it.qty + "+" + bonusRule.b : "-"}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+
+                            <div className="flex justify-between items-start mt-4">
+                                <div className="flex items-center">
+                                    <div className="bg-blue-900 text-white p-1 text-[9px] font-bold rounded-l [writing-mode:vertical-lr] rotate-180 uppercase h-20 text-center">Bonus</div>
+                                    <table className="text-[11px] text-center border border-blue-900 border-l-0 rounded-r overflow-hidden shadow-sm">
+                                        <thead className="bg-slate-50 font-black text-blue-900">
+                                            <tr><th className="px-3 border-b">Qty</th><th className="px-3 border-b">Free</th></tr>
+                                        </thead>
+                                        <tbody className="font-bold">
+                                            <tr><td className="border-b">10</td><td className="border-b text-blue-900">+1</td></tr>
+                                            <tr><td className="border-b">20</td><td className="border-b text-blue-900">+3</td></tr>
+                                            <tr><td className="border-b">30</td><td className="border-b text-blue-900">+5</td></tr>
+                                            <tr><td>50</td><td className="text-blue-900">+10</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="w-72 bg-blue-900 text-white p-4 rounded-2xl shadow-lg">
+                                    <div className="flex justify-between text-[12px] opacity-80 mb-0.5"><span>Subtotal:</span><span>{subtotal.toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between text-[12px] text-red-300 font-bold mb-1.5"><span>VAT (15%):</span><span>{vat.toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 pt-2"><span>TOTAL:</span><span>{total.toLocaleString()} SR</span></div>
+                                </div>
+                            </div>
+
+                            <div className="mt-auto grid grid-cols-2 pt-4 border-t border-slate-200 items-end mb-2 font-black">
+                                <div>
+                                    <p className="text-[13px] text-blue-900 mb-1 uppercase">Payment & Terms:</p>
+                                    <ul className="text-[12px] text-slate-600 leading-tight">
+                                        <li>• 1- Cash 5% discount</li>
+                                        <li>• 2- Payment Terms: 30 Days</li>
+                                    </ul>
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[13px] text-blue-900 mb-1 uppercase">Bank Info:</p>
+                                    <div className="text-[12px] text-slate-600 leading-tight">
+                                        <p>Bank: Bank Alinma</p>
+                                        <p className="text-blue-900 font-black">SA2805000068206829136000</p>
+                                        <p className="text-[10px]">VAT No: 314243545400003</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>
