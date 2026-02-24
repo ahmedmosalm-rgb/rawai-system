@@ -19,7 +19,8 @@
         }
         .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
         .page-box { width: 210mm; height: 297mm; background: white; background-image: url('letterhead.jpg'); background-size: 100% 100%; position: relative; }
-        .qty-btn { background: #e2e8f0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        /* ستايل أزرار الزيادة والنقصان في لوحة التحكم */
+        .qty-btn { background: #e2e8f0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .qty-btn:active { background: #cbd5e1; transform: scale(0.9); }
     </style>
 </head>
@@ -52,7 +53,7 @@
         const updateItem = (id, field, val) => {
             setItems(prev => prev.map(it => {
                 if (it.id !== id) return it;
-                let numericVal = field === 'bonus' ? (parseInt(val) || 0) : val;
+                let numericVal = (field === 'bonus' || field === 'qty') ? (parseInt(val) || 0) : val;
                 let ni = { ...it, [field]: numericVal };
                 
                 let totalP = ni.price * (ni.qty || 1);
@@ -70,7 +71,8 @@
         };
 
         const subtotal = items.reduce((acc, i) => acc + (i.qty > 0 ? i.net : 0), 0);
-        const total = subtotal * 1.15;
+        const vat = subtotal * 0.15;
+        const total = subtotal + vat;
 
         return (
             <div className="flex flex-col lg:flex-row">
@@ -87,7 +89,9 @@
                         </div>
                     </div>
                     
-                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6">🖨️ طباعة / حفظ PDF</button>
+                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 flex items-center justify-center gap-2">
+                        <span>🖨️</span> طباعة / حفظ PDF
+                    </button>
 
                     <div className="border-t pt-4">
                         {items.map(it => (
@@ -101,9 +105,9 @@
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[9px] text-gray-400 font-bold">الكمية</label>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1 bg-white border rounded px-1">
                                             <button className="qty-btn" onClick={() => updateItem(it.id, 'qty', Math.max(0, it.qty - 1))}>-</button>
-                                            <input type="number" value={it.qty || ""} className="flex-1 p-1 border text-center font-bold bg-white" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
+                                            <input type="number" value={it.qty || ""} className="flex-1 p-1 text-center font-bold border-none outline-none" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
                                             <button className="qty-btn" onClick={() => updateItem(it.id, 'qty', it.qty + 1)}>+</button>
                                         </div>
                                     </div>
@@ -112,18 +116,18 @@
                                 <div className="grid grid-cols-3 gap-1.5 font-bold">
                                     <div className="bg-red-50 p-1 rounded border border-red-100 text-center text-red-600">
                                         <label className="text-[8px] block">خصم %</label>
-                                        <input type="number" value={Math.round(it.disc)} className="w-full bg-transparent text-center" onChange={e => updateItem(it.id, 'disc', parseFloat(e.target.value)||0)} />
+                                        <input type="number" value={Math.round(it.disc)} className="w-full bg-transparent text-center outline-none" onChange={e => updateItem(it.id, 'disc', parseFloat(e.target.value)||0)} />
                                     </div>
                                     <div className="bg-blue-50 p-1 rounded border border-blue-100 text-center text-blue-700">
                                         <label className="text-[8px] block">الصافي</label>
-                                        <input type="number" value={Math.round(it.net)} className="w-full bg-transparent text-center" onChange={e => updateItem(it.id, 'net', parseFloat(e.target.value)||0)} />
+                                        <input type="number" value={Math.round(it.net)} className="w-full bg-transparent text-center outline-none" onChange={e => updateItem(it.id, 'net', parseFloat(e.target.value)||0)} />
                                     </div>
                                     <div className="bg-green-50 p-1 rounded border border-green-100 text-center text-green-700">
                                         <label className="text-[8px] block">بونص</label>
                                         <div className="flex items-center justify-center gap-1">
-                                            <button onClick={() => updateItem(it.id, 'bonus', Math.max(0, it.bonus - 1))}>-</button>
-                                            <input type="number" value={it.bonus || ""} className="w-8 bg-transparent text-center" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
-                                            <button onClick={() => updateItem(it.id, 'bonus', it.bonus + 1)}>+</button>
+                                            <button className="qty-btn" onClick={() => updateItem(it.id, 'bonus', Math.max(0, it.bonus - 1))}>-</button>
+                                            <input type="number" value={it.bonus || 0} className="w-8 bg-transparent text-center outline-none" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
+                                            <button className="qty-btn" onClick={() => updateItem(it.id, 'bonus', it.bonus + 1)}>+</button>
                                         </div>
                                     </div>
                                 </div>
@@ -142,16 +146,17 @@
                             <div className="space-y-2 text-left mb-4">
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">To :</span><span className="border-b border-dotted border-slate-400 flex-1 text-xl h-7">{client}</span></div>
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">From :</span><span className="text-slate-700 text-lg">Rawai Aljamal Alhaditha Co.</span></div>
+                                <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">Subject:</span><span className="text-xl underline decoration-blue-900 underline-offset-4">SK booster</span></div>
                             </div>
                             <table className="w-full text-[14px] border-collapse text-center">
                                 <thead>
                                     <tr className="bg-blue-900 text-white">
                                         <th className="p-2 border border-blue-800 text-left">Description</th>
-                                        <th className="p-2 border border-blue-800">Price</th>
+                                        <th className="p-2 border border-blue-800">Price SR</th>
                                         <th className="p-2 border border-blue-800">Qty</th>
-                                        <th className="p-2 border border-blue-800">Total</th>
-                                        <th className="p-2 border border-blue-800">%</th>
-                                        <th className="p-2 border border-blue-800">Net</th>
+                                        <th className="p-2 border border-blue-800">Total SR</th>
+                                        <th className="p-2 border border-blue-800">% Disc</th>
+                                        <th className="p-2 border border-blue-800">Net Price</th>
                                         <th className="p-2 border border-blue-800">Bonus</th>
                                     </tr>
                                 </thead>
@@ -171,15 +176,26 @@
                             </table>
                             <div className="mt-4 flex justify-between items-start">
                                 <div className="flex border border-blue-900 rounded shadow-sm overflow-hidden text-[11px]">
-                                    <div className="bg-blue-900 text-white p-1 [writing-mode:vertical-lr] rotate-180">Bonus</div>
-                                    <table className="px-2">
-                                        <tr className="border-b font-bold"><td>10+1</td><td>20+3</td><td>30+5</td><td>50+10</td></tr>
+                                    <div className="bg-blue-900 text-white p-1 text-[9px] font-bold rounded-l [writing-mode:vertical-lr] rotate-180 h-20 text-center uppercase">Bonus System</div>
+                                    <table className="text-[11px] text-center border-collapse">
+                                        <thead className="bg-slate-50 font-black text-blue-900"><tr><th className="px-3 border-b border-l border-blue-900">Qty</th><th className="px-3 border-b border-blue-900">Free</th></tr></thead>
+                                        <tbody className="font-bold">
+                                            <tr><td className="border-b border-l border-blue-900">10</td><td className="border-b border-blue-900 text-blue-900">+1</td></tr>
+                                            <tr><td className="border-b border-l border-blue-900">20</td><td className="border-b border-blue-900 text-blue-900">+3</td></tr>
+                                            <tr><td className="border-b border-l border-blue-900">30</td><td className="border-b border-blue-900 text-blue-900">+5</td></tr>
+                                            <tr><td className="border-l border-blue-900">50</td><td className="text-blue-900">+10</td></tr>
+                                        </tbody>
                                     </table>
                                 </div>
-                                <div className="w-72 bg-blue-900 text-white p-4 rounded-2xl">
-                                    <div className="flex justify-between text-xs opacity-80"><span>Subtotal:</span><span>{Math.round(subtotal).toLocaleString()} SR</span></div>
-                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 mt-2 pt-2"><span>TOTAL:</span><span>{Math.round(total).toLocaleString()} SR</span></div>
+                                <div className="w-72 bg-blue-900 text-white p-4 rounded-2xl shadow-lg">
+                                    <div className="flex justify-between text-[12px] opacity-80 mb-0.5"><span>Subtotal:</span><span>{Math.round(subtotal).toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between text-[12px] text-red-300 font-bold mb-1.5"><span>VAT (15%):</span><span>{Math.round(vat).toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 pt-2"><span>TOTAL:</span><span>{Math.round(total).toLocaleString()} SR</span></div>
                                 </div>
+                            </div>
+                            <div className="mt-auto grid grid-cols-2 pt-4 border-t border-slate-200 items-end mb-2 font-black">
+                                <div><p className="text-[13px] text-blue-900 mb-1 uppercase">Payment & Terms:</p><ul className="text-[12px] text-slate-600 leading-tight"><li>• 1- Cash 5% discount</li><li>• 2- Payment Terms: 30 Days</li></ul></div>
+                                <div className="text-left font-black"><p className="text-[13px] text-blue-900 mb-1 uppercase">Bank Info:</p><div className="text-[12px] text-slate-600 leading-tight"><p>Bank: Bank Alinma</p><p className="text-blue-900 text-[11px]">SA2805000068206829136000</p><p className="text-[10px]">VAT No: 314243545400003</p></div></div>
                             </div>
                         </div>
                     </div>
