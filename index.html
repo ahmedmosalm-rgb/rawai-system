@@ -19,7 +19,6 @@
         }
         .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
         .page-box { width: 210mm; height: 297mm; background: white; background-image: url('letterhead.jpg'); background-size: 100% 100%; position: relative; }
-        /* ستايل أزرار الزيادة والنقصان في لوحة التحكم */
         .qty-btn { background: #e2e8f0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .qty-btn:active { background: #cbd5e1; transform: scale(0.9); }
     </style>
@@ -55,7 +54,6 @@
                 if (it.id !== id) return it;
                 let numericVal = (field === 'bonus' || field === 'qty') ? (parseInt(val) || 0) : val;
                 let ni = { ...it, [field]: numericVal };
-                
                 let totalP = ni.price * (ni.qty || 1);
                 if (field === 'disc') ni.net = totalP * (1 - ni.disc/100);
                 else if (field === 'net' && totalP > 0) ni.disc = ((totalP - ni.net) / totalP) * 100;
@@ -80,8 +78,15 @@
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     <div className="space-y-4 mb-6 text-right">
                         <div>
-                           <label className="text-[10px] font-bold text-gray-400">العميل</label>
-                           <input type="text" className="w-full p-2 border rounded text-sm font-bold text-right" value={client} onChange={e => setClient(e.target.value)} />
+                           <label className="text-[10px] font-bold text-gray-400">العميل (اضغط للمسح)</label>
+                           <input 
+                                type="text" 
+                                className="w-full p-2 border rounded text-sm font-bold text-right focus:bg-yellow-50" 
+                                value={client} 
+                                onChange={e => setClient(e.target.value)} 
+                                onFocus={() => client === "أحمد مسلم" && setClient("")} 
+                                onBlur={() => client === "" && setClient("أحمد مسلم")} 
+                           />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div><label className="text-[10px] font-bold text-gray-400">رقم العرض</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold" value={ref} onChange={e => setRef(e.target.value)} /></div>
@@ -97,7 +102,6 @@
                         {items.map(it => (
                             <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right shadow-sm text-[11px]">
                                 <p className="font-black text-slate-700 mb-2">{it.desc}</p>
-                                
                                 <div className="grid grid-cols-2 gap-2 mb-3">
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[9px] text-gray-400 font-bold">السعر</label>
@@ -112,7 +116,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-3 gap-1.5 font-bold">
                                     <div className="bg-red-50 p-1 rounded border border-red-100 text-center text-red-600">
                                         <label className="text-[8px] block">خصم %</label>
