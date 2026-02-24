@@ -11,12 +11,10 @@
             @page { size: A4; margin: 0 !important; }
             .no-print { display: none !important; }
             .print-page {
-                width: 210mm; height: 296mm;
-                position: relative; overflow: hidden;
+                width: 210mm; height: 296mm; position: relative; overflow: hidden;
                 background-image: url('letterhead.jpg') !important;
                 background-size: 100% 100% !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
             }
         }
         .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
@@ -24,26 +22,17 @@
     </style>
 </head>
 <body>
-
 <div id="root"></div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
 <script type="text/babel">
     const { useState, useEffect } = React;
-
     const App = () => {
         const [client, setClient] = useState("أحمد مسلم"); 
         const [ref, setRef] = useState("2024-001");
-        const [date, setDate] = useState("");
-
-        useEffect(() => {
-            const today = new Date().toISOString().split('T')[0];
-            setDate(today);
-        }, []);
-
+        const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [items, setItems] = useState([
             { id: 1, desc: "SK booster box", price: 1000, qty: 0, disc: 0, bonus: "", net: 0 },
             { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: "", net: 0 },
@@ -53,157 +42,122 @@
         ]);
 
         const updateItem = (id, field, val) => {
-            setItems(prevItems => prevItems.map(item => {
-                if (item.id === id) {
-                    let newItem = { ...item, [field]: val };
-                    const totalPrice = newItem.price * (newItem.qty || 1);
-                    if (field === 'disc') {
-                        newItem.net = totalPrice * (1 - val / 100);
-                    } else if (field === 'net') {
-                        if (totalPrice > 0) newItem.disc = ((totalPrice - val) / totalPrice) * 100;
-                    } else if (field === 'price' || field === 'qty') {
-                        newItem.net = (newItem.price * newItem.qty) * (1 - newItem.disc / 100);
-                        if (field === 'qty') {
-                            const rules = [{q:50, b:10},{q:30, b:5},{q:20, b:3},{q:10, b:1}];
-                            const rule = rules.find(r => val >= r.q);
-                            newItem.bonus = rule ? rule.b.toString() : "";
-                        }
+            setItems(prev => prev.map(it => {
+                if (it.id !== id) return it;
+                let ni = { ...it, [field]: val };
+                let totalP = ni.price * (ni.qty || 1);
+                if (field === 'disc') ni.net = totalP * (1 - val/100);
+                else if (field === 'net' && totalP > 0) ni.disc = ((totalP - val) / totalP) * 100;
+                else if (field === 'price' || field === 'qty') {
+                    ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
+                    if (field === 'qty') {
+                        let r = [{q:50,b:10},{q:30,b:5},{q:20,b:3},{q:10,b:1}].find(x => val >= x.q);
+                        ni.bonus = r ? r.b.toString() : "";
                     }
-                    return newItem;
                 }
-                return item;
+                return ni;
             }));
         };
 
         const subtotal = items.reduce((acc, i) => acc + (i.qty > 0 ? i.net : 0), 0);
-        const vat = subtotal * 0.15;
-        const total = subtotal + vat;
-
-        // دالة المشاركة النهائية والمضمونة
-        const shareWhatsApp = () => {
-            const currentUrl = "https://ahmedmosalm-rgb.github.io/rawai-system/";
-            const text = `*عرض سعر من شركة روائع الجمال الحديثة*\n\n` +
-                         `*التاريخ:* ${date}\n` +
-                         `*العميل:* ${client}\n` +
-                         `*الإجمالي:* ${Math.round(total).toLocaleString()} ريال\n\n` +
-                         `*الرابط:* ${currentUrl}`;
-            
-            const encodedText = encodeURIComponent(text);
-            const whatsappUrl = `https://wa.me/?text=${encodedText}`;
-            window.open(whatsappUrl, '_blank');
-        };
+        const total = subtotal * 1.15;
 
         return (
             <div className="flex flex-col lg:flex-row">
                 <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
-                    
                     <div className="space-y-4 mb-6 text-right">
                         <div>
-                           <label className="text-[10px] font-bold text-gray-400">اسم العميل (اضغط للمسح)</label>
-                           <input type="text" className="w-full p-2 border rounded text-sm text-right font-bold focus:bg-yellow-50" value={client} onChange={e => setClient(e.target.value)} onFocus={() => client === "أحمد مسلم" && setClient("")} onBlur={() => client === "" && setClient("أحمد مسلم")} />
+                           <label className="text-[10px] font-bold text-gray-400">العميل (اضغط للمسح)</label>
+                           <input type="text" className="w-full p-2 border rounded text-sm font-bold text-right focus:bg-yellow-50" value={client} onChange={e => setClient(e.target.value)} onFocus={() => client === "أحمد مسلم" && setClient("")} onBlur={() => client === "" && setClient("أحمد مسلم")} />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div><label className="text-[10px] font-bold text-gray-400">رقم العرض</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold" value={ref} onChange={e => setRef(e.target.value)} /></div>
                             <div><label className="text-[10px] font-bold text-gray-400">التاريخ</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold" value={date} onChange={e => setDate(e.target.value)} /></div>
                         </div>
                     </div>
-
-                    <div className="flex flex-col gap-2 mb-6">
-                        <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-3 rounded-lg font-black text-sm shadow-md">🖨️ طباعة / حفظ PDF</button>
-                        <button onClick={shareWhatsApp} className="w-full bg-green-600 text-white py-3 rounded-lg font-black text-sm shadow-md">💬 مشاركة واتساب</button>
-                    </div>
+                    
+                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 flex items-center justify-center gap-2">
+                        <span>🖨️</span>
+                        طباعة / حفظ PDF
+                    </button>
 
                     <div className="border-t pt-4">
                         {items.map(it => (
-                            <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right shadow-sm">
-                                <p className="text-[11px] font-black text-slate-700 mb-2">{it.desc}</p>
+                            <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right shadow-sm text-[11px]">
+                                <p className="font-black text-slate-700 mb-2">{it.desc}</p>
                                 <div className="grid grid-cols-2 gap-2 mb-2">
-                                    <input type="number" value={it.price} className="p-1 border text-xs text-center font-bold" onChange={e => updateItem(it.id, 'price', parseFloat(e.target.value)||0)} />
-                                    <input type="number" placeholder="الكمية" value={it.qty || ""} className="p-1 border text-xs text-center font-bold" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
+                                    <input type="number" value={it.price} className="p-1 border text-center font-bold" onChange={e => updateItem(it.id, 'price', parseFloat(e.target.value)||0)} />
+                                    <input type="number" placeholder="الكمية" value={it.qty || ""} className="p-1 border text-center font-bold" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
                                 </div>
-                                <div className="grid grid-cols-3 gap-1.5">
-                                    <div className="bg-red-50 p-1 rounded border border-red-100 text-center">
-                                        <label className="text-[8px] block text-red-500 font-bold text-center">خصم%</label>
-                                        <input type="number" value={Math.round(it.disc)} className="w-full p-1 border-none bg-transparent text-xs text-center text-red-600 font-bold" onChange={e => updateItem(it.id, 'disc', parseFloat(e.target.value)||0)} />
+                                <div className="grid grid-cols-3 gap-1.5 font-bold">
+                                    <div className="bg-red-50 p-1 rounded border border-red-100 text-center text-red-600">
+                                        <label className="text-[8px] block">خصم %</label>
+                                        <input type="number" value={Math.round(it.disc)} className="w-full bg-transparent text-center" onChange={e => updateItem(it.id, 'disc', parseFloat(e.target.value)||0)} />
                                     </div>
-                                    <div className="bg-blue-50 p-1 rounded border border-blue-100 text-center">
-                                        <label className="text-[8px] block text-blue-500 font-bold text-center">الصافي</label>
-                                        <input type="number" value={Math.round(it.net)} className="w-full p-1 border-none bg-transparent text-xs text-center text-blue-700 font-bold" onChange={e => updateItem(it.id, 'net', parseFloat(e.target.value)||0)} />
+                                    <div className="bg-blue-50 p-1 rounded border border-blue-100 text-center text-blue-700">
+                                        <label className="text-[8px] block">الصافي</label>
+                                        <input type="number" value={Math.round(it.net)} className="w-full bg-transparent text-center" onChange={e => updateItem(it.id, 'net', parseFloat(e.target.value)||0)} />
                                     </div>
-                                    <div className="bg-green-50 p-1 rounded border border-green-100 text-center">
-                                        <label className="text-[8px] block text-green-600 font-bold text-center">بونص</label>
-                                        <input type="text" value={it.bonus} className="w-full p-1 border-none bg-transparent text-xs text-center text-green-700 font-bold" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
+                                    <div className="bg-green-50 p-1 rounded border border-green-100 text-center text-green-700">
+                                        <label className="text-[8px] block">بونص</label>
+                                        <input type="text" value={it.bonus} className="w-full bg-transparent text-center" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
-
                 <div className="flex-1 screen-view">
                     <div className="page-box print-page">
-                        <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col" dir="ltr">
-                            <div className="mb-4">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div className="border-[3px] border-blue-900 px-4 py-1 font-black text-[15px]">Quotation No.: <span className="text-blue-900">{ref}</span></div>
-                                    <div className="font-black text-[15px] text-blue-900">Date: {date}</div>
-                                </div>
-                                <div className="space-y-2 text-left font-black">
-                                    <div className="flex justify-start items-center gap-4"><span className="text-blue-900 text-[15px] min-w-[65px]">To :</span><span className="border-b border-dotted border-slate-400 flex-1 text-xl h-7">{client}</span></div>
-                                    <div className="flex justify-start items-center gap-4"><span className="text-blue-900 text-[15px] min-w-[65px]">From :</span><span className="text-lg text-slate-700">Rawai Aljamal Alhaditha Co.</span></div>
-                                    <div className="flex justify-start items-center gap-4"><span className="text-blue-900 text-[15px] min-w-[65px]">Subject:</span><span className="text-xl text-slate-800 underline decoration-blue-900 underline-offset-4">SK booster</span></div>
-                                </div>
-                                <p className="text-left font-black mt-4 text-[15px] text-slate-700">Dear Sir,</p>
+                        <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col font-black" dir="ltr">
+                            <div className="flex justify-between items-center mb-6 text-[15px]">
+                                <div className="border-[3px] border-blue-900 px-4 py-1">Quotation No.: <span className="text-blue-900">{ref}</span></div>
+                                <div className="text-blue-900">Date: {date}</div>
                             </div>
-
-                            <table className="w-full text-[14px] border-collapse">
+                            <div className="space-y-2 text-left mb-4">
+                                <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">To :</span><span className="border-b border-dotted border-slate-400 flex-1 text-xl h-7">{client}</span></div>
+                                <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">From :</span><span className="text-slate-700 text-lg">Rawai Aljamal Alhaditha Co.</span></div>
+                                <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">Subject:</span><span className="text-xl underline decoration-blue-900 underline-offset-4">SK booster</span></div>
+                            </div>
+                            <table className="w-full text-[14px] border-collapse text-center">
                                 <thead>
-                                    <tr className="bg-blue-900 text-white font-black">
-                                        <th className="p-2.5 border border-blue-800 text-left">Description</th>
-                                        <th className="p-2.5 border border-blue-800">Price SR</th>
-                                        <th className="p-2.5 border border-blue-800">Qty</th>
-                                        <th className="p-2.5 border border-blue-800">Total SR</th>
-                                        <th className="p-2.5 border border-blue-800">% Disc</th>
-                                        <th className="p-2.5 border border-blue-800">Net Price</th>
-                                        <th className="p-2.5 border border-blue-800">Bonus</th>
+                                    <tr className="bg-blue-900 text-white">
+                                        <th className="p-2 border border-blue-800 text-left">Description</th>
+                                        <th className="p-2 border border-blue-800">Price</th>
+                                        <th className="p-2 border border-blue-800">Qty</th>
+                                        <th className="p-2 border border-blue-800">Total</th>
+                                        <th className="p-2 border border-blue-800">%</th>
+                                        <th className="p-2 border border-blue-800">Net</th>
+                                        <th className="p-2 border border-blue-800">Bonus</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {items.map(it => (
-                                        <tr key={it.id} className="text-center border-b font-black text-slate-800 h-10">
-                                            <td className="p-1.5 text-left">{it.desc}</td>
-                                            <td className="p-1.5">{it.price}</td>
-                                            <td className="p-1.5 bg-slate-50">{it.qty || '-'}</td>
-                                            <td className="p-1.5">{(it.price * it.qty) || '-'}</td>
-                                            <td className="p-1.5 text-red-600 font-bold">{it.disc ? Math.round(it.disc) + "%" : "-"}</td>
-                                            <td className="p-1.5 text-blue-900">{it.qty ? Math.round(it.net).toLocaleString() : '-'}</td>
-                                            <td className="p-1.5 text-green-700">{it.qty && it.bonus ? it.qty + "+" + it.bonus : "-"}</td>
+                                        <tr key={it.id} className="border-b h-10 text-slate-800">
+                                            <td className="text-left p-1">{it.desc}</td>
+                                            <td>{it.price}</td>
+                                            <td className="bg-slate-50">{it.qty || '-'}</td>
+                                            <td>{it.qty ? (it.price * it.qty) : '-'}</td>
+                                            <td className="text-red-600">{it.disc ? Math.round(it.disc) + "%" : "-"}</td>
+                                            <td className="text-blue-900">{it.qty ? Math.round(it.net).toLocaleString() : '-'}</td>
+                                            <td className="text-green-700">{it.qty && it.bonus ? it.qty + "+" + it.bonus : "-"}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-
-                            <div className="flex justify-between items-start mt-4">
-                                <div className="flex items-center">
-                                    <div className="bg-blue-900 text-white p-1 text-[9px] font-bold rounded-l [writing-mode:vertical-lr] rotate-180 h-20 text-center uppercase">Bonus System</div>
-                                    <table className="text-[11px] text-center border border-blue-900 border-l-0 rounded-r shadow-sm">
-                                        <thead className="bg-slate-50 font-black text-blue-900"><tr><th className="px-3 border-b">Qty</th><th className="px-3 border-b">Free</th></tr></thead>
-                                        <tbody className="font-bold">
-                                            <tr><td className="border-b">10</td><td className="border-b text-blue-900">+1</td></tr>
-                                            <tr><td className="border-b">20</td><td className="border-b text-blue-900">+3</td></tr>
-                                            <tr><td className="border-b">30</td><td className="border-b text-blue-900">+5</td></tr>
-                                            <tr><td>50</td><td className="text-blue-900">+10</td></tr>
-                                        </tbody>
+                            <div className="mt-4 flex justify-between items-start">
+                                <div className="flex border border-blue-900 rounded shadow-sm overflow-hidden text-[11px]">
+                                    <div className="bg-blue-900 text-white p-1 [writing-mode:vertical-lr] rotate-180">Bonus</div>
+                                    <table className="px-2">
+                                        <tr className="border-b font-bold"><td>10+1</td><td>20+3</td><td>30+5</td><td>50+10</td></tr>
                                     </table>
                                 </div>
-                                <div className="w-72 bg-blue-900 text-white p-4 rounded-2xl shadow-lg">
-                                    <div className="flex justify-between text-[12px] opacity-80 mb-0.5"><span>Subtotal:</span><span>{Math.round(subtotal).toLocaleString()} SR</span></div>
-                                    <div className="flex justify-between text-[12px] text-red-300 font-bold mb-1.5"><span>VAT (15%):</span><span>{Math.round(vat).toLocaleString()} SR</span></div>
-                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 pt-2"><span>TOTAL:</span><span>{Math.round(total).toLocaleString()} SR</span></div>
+                                <div className="w-72 bg-blue-900 text-white p-4 rounded-2xl">
+                                    <div className="flex justify-between text-xs opacity-80"><span>Subtotal:</span><span>{Math.round(subtotal).toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 mt-2 pt-2"><span>TOTAL:</span><span>{Math.round(total).toLocaleString()} SR</span></div>
                                 </div>
                             </div>
-
                             <div className="mt-auto grid grid-cols-2 pt-4 border-t border-slate-200 items-end mb-2 font-black">
                                 <div><p className="text-[13px] text-blue-900 mb-1 uppercase">Payment & Terms:</p><ul className="text-[12px] text-slate-600 leading-tight"><li>• 1- Cash 5% discount</li><li>• 2- Payment Terms: 30 Days</li></ul></div>
                                 <div className="text-left font-black"><p className="text-[13px] text-blue-900 mb-1 uppercase">Bank Info:</p><div className="text-[12px] text-slate-600 leading-tight"><p>Bank: Bank Alinma</p><p className="text-blue-900">SA2805000068206829136000</p><p className="text-[10px]">VAT No: 314243545400003</p></div></div>
@@ -214,9 +168,7 @@
             </div>
         );
     };
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
