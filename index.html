@@ -19,6 +19,8 @@
         }
         .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
         .page-box { width: 210mm; height: 297mm; background: white; background-image: url('letterhead.jpg'); background-size: 100% 100%; position: relative; }
+        .qty-btn { background: #e2e8f0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .qty-btn:active { background: #cbd5e1; transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -31,28 +33,36 @@
     const { useState, useEffect } = React;
     const App = () => {
         const [client, setClient] = useState("أحمد مسلم"); 
-        const [ref, setRef] = useState("2024-001");
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+        const [ref, setRef] = useState("");
+
+        useEffect(() => {
+            const cleanDate = date.replace(/-/g, "");
+            setRef(`${cleanDate}-01`);
+        }, [date]);
+
         const [items, setItems] = useState([
-            { id: 1, desc: "SK booster box", price: 1000, qty: 0, disc: 0, bonus: "", net: 0 },
-            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: "", net: 0 },
-            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: "", net: 0 },
-            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: "", net: 0 },
-            { id: 5, desc: "SK repairing gel 50 gm", price: 220, qty: 0, disc: 0, bonus: "", net: 0 }
+            { id: 1, desc: "SK booster box", price: 1000, qty: 0, disc: 0, bonus: 0, net: 0 },
+            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0, net: 0 },
+            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: 0, net: 0 },
+            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: 0, net: 0 },
+            { id: 5, desc: "SK repairing gel 50 gm", price: 220, qty: 0, disc: 0, bonus: 0, net: 0 }
         ]);
 
         const updateItem = (id, field, val) => {
             setItems(prev => prev.map(it => {
                 if (it.id !== id) return it;
-                let ni = { ...it, [field]: val };
+                let numericVal = field === 'bonus' ? (parseInt(val) || 0) : val;
+                let ni = { ...it, [field]: numericVal };
+                
                 let totalP = ni.price * (ni.qty || 1);
-                if (field === 'disc') ni.net = totalP * (1 - val/100);
-                else if (field === 'net' && totalP > 0) ni.disc = ((totalP - val) / totalP) * 100;
+                if (field === 'disc') ni.net = totalP * (1 - ni.disc/100);
+                else if (field === 'net' && totalP > 0) ni.disc = ((totalP - ni.net) / totalP) * 100;
                 else if (field === 'price' || field === 'qty') {
                     ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
                     if (field === 'qty') {
                         let r = [{q:50,b:10},{q:30,b:5},{q:20,b:3},{q:10,b:1}].find(x => val >= x.q);
-                        ni.bonus = r ? r.b.toString() : "";
+                        ni.bonus = r ? r.b : 0;
                     }
                 }
                 return ni;
@@ -68,8 +78,8 @@
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     <div className="space-y-4 mb-6 text-right">
                         <div>
-                           <label className="text-[10px] font-bold text-gray-400">العميل (اضغط للمسح)</label>
-                           <input type="text" className="w-full p-2 border rounded text-sm font-bold text-right focus:bg-yellow-50" value={client} onChange={e => setClient(e.target.value)} onFocus={() => client === "أحمد مسلم" && setClient("")} onBlur={() => client === "" && setClient("أحمد مسلم")} />
+                           <label className="text-[10px] font-bold text-gray-400">العميل</label>
+                           <input type="text" className="w-full p-2 border rounded text-sm font-bold text-right" value={client} onChange={e => setClient(e.target.value)} />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div><label className="text-[10px] font-bold text-gray-400">رقم العرض</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold" value={ref} onChange={e => setRef(e.target.value)} /></div>
@@ -77,19 +87,28 @@
                         </div>
                     </div>
                     
-                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 flex items-center justify-center gap-2">
-                        <span>🖨️</span>
-                        طباعة / حفظ PDF
-                    </button>
+                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6">🖨️ طباعة / حفظ PDF</button>
 
                     <div className="border-t pt-4">
                         {items.map(it => (
                             <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right shadow-sm text-[11px]">
                                 <p className="font-black text-slate-700 mb-2">{it.desc}</p>
-                                <div className="grid grid-cols-2 gap-2 mb-2">
-                                    <input type="number" value={it.price} className="p-1 border text-center font-bold" onChange={e => updateItem(it.id, 'price', parseFloat(e.target.value)||0)} />
-                                    <input type="number" placeholder="الكمية" value={it.qty || ""} className="p-1 border text-center font-bold" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
+                                
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] text-gray-400 font-bold">السعر</label>
+                                        <input type="number" value={it.price} className="p-1 border text-center font-bold" onChange={e => updateItem(it.id, 'price', parseFloat(e.target.value)||0)} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[9px] text-gray-400 font-bold">الكمية</label>
+                                        <div className="flex items-center gap-1">
+                                            <button className="qty-btn" onClick={() => updateItem(it.id, 'qty', Math.max(0, it.qty - 1))}>-</button>
+                                            <input type="number" value={it.qty || ""} className="flex-1 p-1 border text-center font-bold bg-white" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
+                                            <button className="qty-btn" onClick={() => updateItem(it.id, 'qty', it.qty + 1)}>+</button>
+                                        </div>
+                                    </div>
                                 </div>
+
                                 <div className="grid grid-cols-3 gap-1.5 font-bold">
                                     <div className="bg-red-50 p-1 rounded border border-red-100 text-center text-red-600">
                                         <label className="text-[8px] block">خصم %</label>
@@ -101,13 +120,18 @@
                                     </div>
                                     <div className="bg-green-50 p-1 rounded border border-green-100 text-center text-green-700">
                                         <label className="text-[8px] block">بونص</label>
-                                        <input type="text" value={it.bonus} className="w-full bg-transparent text-center" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
+                                        <div className="flex items-center justify-center gap-1">
+                                            <button onClick={() => updateItem(it.id, 'bonus', Math.max(0, it.bonus - 1))}>-</button>
+                                            <input type="number" value={it.bonus || ""} className="w-8 bg-transparent text-center" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
+                                            <button onClick={() => updateItem(it.id, 'bonus', it.bonus + 1)}>+</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
+
                 <div className="flex-1 screen-view">
                     <div className="page-box print-page">
                         <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col font-black" dir="ltr">
@@ -118,7 +142,6 @@
                             <div className="space-y-2 text-left mb-4">
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">To :</span><span className="border-b border-dotted border-slate-400 flex-1 text-xl h-7">{client}</span></div>
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">From :</span><span className="text-slate-700 text-lg">Rawai Aljamal Alhaditha Co.</span></div>
-                                <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">Subject:</span><span className="text-xl underline decoration-blue-900 underline-offset-4">SK booster</span></div>
                             </div>
                             <table className="w-full text-[14px] border-collapse text-center">
                                 <thead>
@@ -157,10 +180,6 @@
                                     <div className="flex justify-between text-xs opacity-80"><span>Subtotal:</span><span>{Math.round(subtotal).toLocaleString()} SR</span></div>
                                     <div className="flex justify-between font-black text-2xl border-t border-blue-800 mt-2 pt-2"><span>TOTAL:</span><span>{Math.round(total).toLocaleString()} SR</span></div>
                                 </div>
-                            </div>
-                            <div className="mt-auto grid grid-cols-2 pt-4 border-t border-slate-200 items-end mb-2 font-black">
-                                <div><p className="text-[13px] text-blue-900 mb-1 uppercase">Payment & Terms:</p><ul className="text-[12px] text-slate-600 leading-tight"><li>• 1- Cash 5% discount</li><li>• 2- Payment Terms: 30 Days</li></ul></div>
-                                <div className="text-left font-black"><p className="text-[13px] text-blue-900 mb-1 uppercase">Bank Info:</p><div className="text-[12px] text-slate-600 leading-tight"><p>Bank: Bank Alinma</p><p className="text-blue-900">SA2805000068206829136000</p><p className="text-[10px]">VAT No: 314243545400003</p></div></div>
                             </div>
                         </div>
                     </div>
