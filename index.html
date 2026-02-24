@@ -39,9 +39,8 @@
     const App = () => {
         const [client, setClient] = useState("أحمد مسلم"); 
         const [ref, setRef] = useState("2024-001");
-        const [date, setDate] = useState(""); // سيتم تعبئته تلقائياً
+        const [date, setDate] = useState("");
 
-        // كود لجلب تاريخ اليوم عند فتح التطبيق
         useEffect(() => {
             const today = new Date().toISOString().split('T')[0];
             setDate(today);
@@ -82,13 +81,17 @@
         const vat = subtotal * 0.15;
         const total = subtotal + vat;
 
+        // دالة المشاركة الجديدة والمحسنة
         const shareWhatsApp = () => {
+            const currentUrl = "https://ahmedmosalm-rgb.github.io/rawai-system/";
             const message = `*عرض سعر من شركة روائع الجمال الحديثة*%0A%0A` +
                             `*التاريخ:* ${date}%0A` +
                             `*العميل:* ${client}%0A` +
                             `*الإجمالي:* ${Math.round(total).toLocaleString()} ريال%0A%0A` +
-                            `الرابط: ${window.location.href}`;
-            window.open(`https://wa.me/?text=${message}`, '_blank');
+                            `*الرابط:* ${currentUrl}`;
+            
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${message}`;
+            window.open(whatsappUrl, '_blank');
         };
 
         return (
@@ -102,20 +105,14 @@
                            <input type="text" className="w-full p-2 border rounded text-sm text-right font-bold focus:bg-yellow-50" value={client} onChange={e => setClient(e.target.value)} onFocus={() => client === "أحمد مسلم" && setClient("")} onBlur={() => client === "" && setClient("أحمد مسلم")} />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div>
-                               <label className="text-[10px] font-bold text-gray-400">رقم العرض</label>
-                               <input type="text" className="w-full p-2 border rounded text-sm text-right font-bold" value={ref} onChange={e => setRef(e.target.value)} />
-                            </div>
-                            <div>
-                               <label className="text-[10px] font-bold text-gray-400">تاريخ العرض</label>
-                               <input type="date" className="w-full p-2 border rounded text-sm text-right font-bold" value={date} onChange={e => setDate(e.target.value)} />
-                            </div>
+                            <div><label className="text-[10px] font-bold text-gray-400">رقم العرض</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold" value={ref} onChange={e => setRef(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400">التاريخ</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold" value={date} onChange={e => setDate(e.target.value)} /></div>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-2 mb-6">
-                        <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-3 rounded-lg font-black text-sm">🖨️ طباعة / حفظ PDF</button>
-                        <button onClick={shareWhatsApp} className="w-full bg-green-600 text-white py-3 rounded-lg font-black text-sm">💬 واتساب</button>
+                        <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-3 rounded-lg font-black text-sm shadow-md">🖨️ طباعة / حفظ PDF</button>
+                        <button onClick={shareWhatsApp} className="w-full bg-green-600 text-white py-3 rounded-lg font-black text-sm shadow-md">💬 مشاركة واتساب</button>
                     </div>
 
                     <div className="border-t pt-4">
@@ -127,16 +124,16 @@
                                     <input type="number" placeholder="الكمية" value={it.qty || ""} className="p-1 border text-xs text-center font-bold" onChange={e => updateItem(it.id, 'qty', parseInt(e.target.value)||0)} />
                                 </div>
                                 <div className="grid grid-cols-3 gap-1.5">
-                                    <div className="bg-red-50 p-1 rounded border border-red-100">
-                                        <label className="text-[8px] block text-red-500 font-bold text-center">خصم %</label>
+                                    <div className="bg-red-50 p-1 rounded border border-red-100 text-center">
+                                        <label className="text-[8px] block text-red-500 font-bold">خصم%</label>
                                         <input type="number" value={Math.round(it.disc)} className="w-full p-1 border-none bg-transparent text-xs text-center text-red-600 font-bold" onChange={e => updateItem(it.id, 'disc', parseFloat(e.target.value)||0)} />
                                     </div>
-                                    <div className="bg-blue-50 p-1 rounded border border-blue-100">
-                                        <label className="text-[8px] block text-blue-500 font-bold text-center">الصافي</label>
+                                    <div className="bg-blue-50 p-1 rounded border border-blue-100 text-center">
+                                        <label className="text-[8px] block text-blue-500 font-bold">الصافي</label>
                                         <input type="number" value={Math.round(it.net)} className="w-full p-1 border-none bg-transparent text-xs text-center text-blue-700 font-bold" onChange={e => updateItem(it.id, 'net', parseFloat(e.target.value)||0)} />
                                     </div>
-                                    <div className="bg-green-50 p-1 rounded border border-green-100">
-                                        <label className="text-[8px] block text-green-600 font-bold text-center">بونص</label>
+                                    <div className="bg-green-50 p-1 rounded border border-green-100 text-center">
+                                        <label className="text-[8px] block text-green-600 font-bold">بونص</label>
                                         <input type="text" value={it.bonus} className="w-full p-1 border-none bg-transparent text-xs text-center text-green-700 font-bold" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
                                     </div>
                                 </div>
