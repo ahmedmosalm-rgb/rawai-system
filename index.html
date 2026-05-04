@@ -42,36 +42,41 @@
         }, [date]);
 
         const [items, setItems] = useState([
-            { id: 1, desc: "SK booster box", price: 1000, qty: 0, disc: 0, bonus: 0, net: 0 },
-            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0, net: 0 },
-            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: 0, net: 0 },
-            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: 0, net: 0 },
-            { id: 5, desc: "SK repairing gel 50 gm", price: 220, qty: 0, disc: 0, bonus: 0, net: 0 }
+            { id: 1, desc: "SK booster box", price: 1200, qty: 0, disc: 0, bonus: 0, net: 0, autoBonus: true, taxInclusive: false },
+            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0, net: 0, autoBonus: false, taxInclusive: true },
+            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: 0, net: 0, autoBonus: false, taxInclusive: true },
+            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: 0, net: 0, autoBonus: false, taxInclusive: true },
+            { id: 5, desc: "SK repairing gel 50 gm", price: 230, qty: 0, disc: 0, bonus: 0, net: 0, autoBonus: false, taxInclusive: true }
         ]);
 
         const updateItem = (id, field, val) => {
             setItems(prev => prev.map(it => {
                 if (it.id !== id) return it;
-                let numericVal = (field === 'bonus' || field === 'qty' || field === 'disc' || field === 'price') ? (parseFloat(val) || 0) : val;
+                let numericVal = (field === 'bonus' || field === 'qty' || field === 'disc' || field === 'price' || field === 'net') ? (parseFloat(val) || 0) : val;
                 let ni = { ...it, [field]: numericVal };
                 
-                let totalP = ni.price * (ni.qty || 1);
-                if (field === 'disc') ni.net = totalP * (1 - ni.disc/100);
-                else if (field === 'net' && totalP > 0) ni.disc = ((totalP - ni.net) / totalP) * 100;
-                else if (field === 'price' || field === 'qty') {
+                if (field === 'disc' || field === 'price' || field === 'qty') {
                     ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
-                    if (field === 'qty') {
-                        let r = [{q:50,b:10},{q:30,b:5},{q:20,b:3},{q:10,b:1}].find(x => val >= x.q);
-                        ni.bonus = r ? r.b : 0;
+                } else if (field === 'net') {
+                    let totalBeforeDisc = ni.price * ni.qty;
+                    if (totalBeforeDisc > 0) {
+                        ni.disc = ((totalBeforeDisc - ni.net) / totalBeforeDisc) * 100;
                     }
                 }
+
+                if (field === 'qty' && ni.autoBonus) {
+                    let r = [{q:50,b:10},{q:30,b:5},{q:20,b:3},{q:10,b:1}].find(x => numericVal >= x.q);
+                    ni.bonus = r ? r.b : 0;
+                }
+                
                 return ni;
             }));
         };
 
-        const subtotal = items.reduce((acc, i) => acc + (i.qty > 0 ? i.net : 0), 0);
-        const vat = subtotal * 0.15;
-        const total = subtotal + vat;
+        const totalNetAll = items.reduce((acc, i) => acc + (i.qty > 0 ? i.net : 0), 0);
+        const boxItem = items.find(i => i.id === 1);
+        const vat = (boxItem && boxItem.qty > 0) ? (boxItem.net * 0.15) : 0;
+        const finalTotal = totalNetAll + vat;
 
         return (
             <div className="flex flex-col lg:flex-row">
@@ -79,8 +84,14 @@
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     <div className="space-y-4 mb-6 text-right">
                         <div>
-                           <label className="text-[10px] font-bold text-gray-400">العميل (اضغط للمسح)</label>
-                           <input type="text" className="w-full p-2 border rounded text-sm font-bold text-right focus:bg-yellow-50 outline-none" value={client} onChange={e => setClient(e.target.value)} onFocus={() => client === "أحمد مسلم" && setClient("")} onBlur={() => client === "" && setClient("أحمد مسلم")} />
+                           <label className="text-[10px] font-bold text-gray-400">العميل</label>
+                           <input 
+                            type="text" 
+                            className="w-full p-2 border rounded text-sm font-bold text-right outline-none focus:ring-2 focus:ring-blue-500" 
+                            value={client} 
+                            onChange={e => setClient(e.target.value)} 
+                            onFocus={(e) => e.target.select()} // تم إضافة هذه الخاصية لمسح النص عند الضغط
+                           />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div><label className="text-[10px] font-bold text-gray-400">رقم العرض</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={ref} onChange={e => setRef(e.target.value)} /></div>
@@ -88,47 +99,25 @@
                         </div>
                     </div>
                     
-                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 flex items-center justify-center gap-2">
-                        <span>🖨️</span> طباعة / حفظ PDF
-                    </button>
+                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 tracking-wider">🖨️ طباعة العرض</button>
 
                     <div className="border-t pt-4">
                         {items.map(it => (
-                            <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right shadow-sm text-[11px]">
-                                <p className="font-black text-slate-700 mb-2">{it.desc}</p>
-                                
-                                <div className="grid grid-cols-2 gap-2 mb-3">
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] text-gray-400 font-bold">السعر</label>
-                                        <input type="number" value={it.price} className="p-1 border rounded text-center font-bold outline-none" onChange={e => updateItem(it.id, 'price', e.target.value)} />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[9px] text-gray-400 font-bold">الكمية</label>
-                                        <div className="flex items-center gap-1 bg-white border rounded px-1">
-                                            <button className="control-btn" onClick={() => updateItem(it.id, 'qty', Math.max(0, it.qty - 1))}>-</button>
-                                            <input type="number" value={it.qty || ""} className="flex-1 p-1 text-center font-bold outline-none border-none w-10" onChange={e => updateItem(it.id, 'qty', e.target.value)} />
-                                            <button className="control-btn" onClick={() => updateItem(it.id, 'qty', it.qty + 1)}>+</button>
-                                        </div>
-                                    </div>
+                            <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right text-[11px]">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`text-[8px] px-1 rounded ${it.taxInclusive ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                        {it.taxInclusive ? 'شامل الضريبة' : '+ ضريبة 15%'}
+                                    </span>
+                                    <p className="font-black text-slate-700">{it.desc}</p>
                                 </div>
-
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="number" value={it.price} className="p-1 border rounded text-center outline-none" onChange={e => updateItem(it.id, 'price', e.target.value)} onFocus={(e) => e.target.select()} />
+                                    <input type="number" value={it.qty || ""} className="p-1 border rounded text-center outline-none" onChange={e => updateItem(it.id, 'qty', e.target.value)} onFocus={(e) => e.target.select()} />
+                                </div>
                                 <div className="grid grid-cols-3 gap-1.5 font-bold">
-                                    <div className="bg-red-50 p-1 rounded border border-red-100 text-center">
-                                        <label className="text-[8px] block text-red-500">خصم %</label>
-                                        <input type="number" value={Math.round(it.disc)} className="w-full bg-transparent text-center text-red-600 outline-none" onChange={e => updateItem(it.id, 'disc', e.target.value)} />
-                                    </div>
-                                    <div className="bg-blue-50 p-1 rounded border border-blue-100 text-center">
-                                        <label className="text-[8px] block text-blue-500">الصافي</label>
-                                        <input type="number" value={Math.round(it.net)} className="w-full bg-transparent text-center text-blue-700 outline-none" onChange={e => updateItem(it.id, 'net', e.target.value)} />
-                                    </div>
-                                    <div className="bg-green-50 p-1 rounded border border-green-100 text-center">
-                                        <label className="text-[8px] block text-green-600">بونص</label>
-                                        <div className="flex items-center justify-center gap-1">
-                                            <button className="control-btn h-5 w-5 text-[10px]" onClick={() => updateItem(it.id, 'bonus', Math.max(0, it.bonus - 1))}>-</button>
-                                            <input type="number" value={it.bonus || 0} className="w-6 bg-transparent text-center text-green-700 outline-none text-[10px]" onChange={e => updateItem(it.id, 'bonus', e.target.value)} />
-                                            <button className="control-btn h-5 w-5 text-[10px]" onClick={() => updateItem(it.id, 'bonus', it.bonus + 1)}>+</button>
-                                        </div>
-                                    </div>
+                                    <div className="text-center"><label className="text-[8px] block">خصم %</label><input type="number" value={Math.round(it.disc)} className="w-full border rounded text-center outline-none" onChange={e => updateItem(it.id, 'disc', e.target.value)} onFocus={(e) => e.target.select()} /></div>
+                                    <div className="text-center"><label className="text-[8px] block">الصافي</label><input type="number" value={Math.round(it.net)} className="w-full border rounded text-center outline-none" onChange={e => updateItem(it.id, 'net', e.target.value)} onFocus={(e) => e.target.select()} /></div>
+                                    <div className="text-center"><label className="text-[8px] block">بونص</label><input type="number" value={it.bonus || 0} className="w-full border rounded text-center outline-none" onChange={e => updateItem(it.id, 'bonus', e.target.value)} onFocus={(e) => e.target.select()} /></div>
                                 </div>
                             </div>
                         ))}
@@ -162,39 +151,52 @@
                                 <tbody>
                                     {items.map(it => (
                                         <tr key={it.id} className="border-b h-10 text-slate-800">
-                                            <td className="text-left p-1">{it.desc}</td>
+                                            <td className="text-left p-1">{it.desc} {it.taxInclusive && <span className="text-[8px] text-slate-400 block">(Tax Incl.)</span>}</td>
                                             <td>{it.price}</td>
                                             <td className="bg-slate-50">{it.qty || '-'}</td>
-                                            <td>{it.qty ? (it.price * it.qty) : '-'}</td>
-                                            <td className="text-red-600">{it.disc ? Math.round(it.disc) + "%" : "-"}</td>
+                                            <td>{it.qty ? (it.price * it.qty).toLocaleString() : '-'}</td>
+                                            <td className="text-red-600">{it.qty && it.disc ? Math.round(it.disc) + "%" : "-"}</td>
                                             <td className="text-blue-900">{it.qty ? Math.round(it.net).toLocaleString() : '-'}</td>
-                                            <td className="text-green-700">{it.qty && it.bonus ? it.qty + "+" + it.bonus : "-"}</td>
+                                            <td className="text-green-700">{it.qty && it.bonus ? it.qty + "+" + it.bonus : (it.qty ? it.qty : "-")}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+
                             <div className="mt-4 flex justify-between items-start">
-                                <div className="flex border border-blue-900 rounded shadow-sm overflow-hidden text-[11px]">
-                                    <div className="bg-blue-900 text-white p-1 text-[9px] font-bold rounded-l [writing-mode:vertical-lr] rotate-180 h-20 text-center uppercase">Bonus System</div>
-                                    <table className="text-[11px] text-center border-collapse">
-                                        <thead className="bg-slate-50 font-black text-blue-900"><tr><th className="px-3 border-b border-l border-blue-900">Qty</th><th className="px-3 border-b border-blue-900">Free</th></tr></thead>
-                                        <tbody className="font-bold">
-                                            <tr><td className="border-b border-l border-blue-900">10</td><td className="border-b border-blue-900 text-blue-900">+1</td></tr>
-                                            <tr><td className="border-b border-l border-blue-900">20</td><td className="border-b border-blue-900 text-blue-900">+3</td></tr>
-                                            <tr><td className="border-b border-l border-blue-900">30</td><td className="border-b border-blue-900 text-blue-900">+5</td></tr>
-                                            <tr><td className="border-l border-blue-900">50</td><td className="text-blue-900">+10</td></tr>
-                                        </tbody>
-                                    </table>
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-[10px] text-blue-900 font-black text-center uppercase tracking-tighter">SK booster box system</p>
+                                    <div className="flex border border-blue-900 rounded shadow-sm overflow-hidden text-[11px]">
+                                        <div className="bg-blue-900 text-white p-1 text-[9px] font-bold rounded-l [writing-mode:vertical-lr] rotate-180 h-20 text-center uppercase">Bonus</div>
+                                        <table className="text-[11px] text-center border-collapse">
+                                            <thead className="bg-slate-50 font-black text-blue-900"><tr><th className="px-3 border-b border-l border-blue-900">Qty</th><th className="px-3 border-b border-blue-900">Free</th></tr></thead>
+                                            <tbody className="font-bold">
+                                                <tr><td className="border-b border-l border-blue-900">10</td><td className="border-b border-blue-900 text-blue-900">+1</td></tr>
+                                                <tr><td className="border-b border-l border-blue-900">20</td><td className="border-b border-blue-900 text-blue-900">+3</td></tr>
+                                                <tr><td className="border-b border-l border-blue-900">30</td><td className="border-b border-blue-900 text-blue-900">+5</td></tr>
+                                                <tr><td className="border-l border-blue-900">50</td><td className="text-blue-900">+10</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                                <div className="w-72 bg-blue-900 text-white p-4 rounded-2xl shadow-lg">
-                                    <div className="flex justify-between text-[12px] opacity-80 mb-0.5"><span>Subtotal:</span><span>{Math.round(subtotal).toLocaleString()} SR</span></div>
-                                    <div className="flex justify-between text-[12px] text-red-300 font-bold mb-1.5"><span>VAT (15%):</span><span>{Math.round(vat).toLocaleString()} SR</span></div>
-                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 pt-2"><span>TOTAL:</span><span>{Math.round(total).toLocaleString()} SR</span></div>
+
+                                <div className="w-80 bg-blue-900 text-white p-4 rounded-2xl shadow-lg">
+                                    <div className="flex justify-between text-[12px] opacity-80 mb-0.5"><span>Subtotal (Net):</span><span>{Math.round(totalNetAll).toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between text-[12px] text-red-300 font-bold mb-1.5"><span>VAT (15% on Box only):</span><span>{Math.round(vat).toLocaleString()} SR</span></div>
+                                    <div className="flex justify-between font-black text-2xl border-t border-blue-800 pt-2"><span>TOTAL:</span><span>{Math.round(finalTotal).toLocaleString()} SR</span></div>
                                 </div>
                             </div>
+
                             <div className="mt-auto grid grid-cols-2 pt-4 border-t border-slate-200 items-end mb-2 font-black">
                                 <div><p className="text-[13px] text-blue-900 mb-1 uppercase">Payment & Terms:</p><ul className="text-[12px] text-slate-600 leading-tight"><li>• 1- Cash 5% discount</li><li>• 2- Payment Terms: 30 Days</li></ul></div>
-                                <div className="text-left font-black"><p className="text-[13px] text-blue-900 mb-1 uppercase">Bank Info:</p><div className="text-[12px] text-slate-600 leading-tight"><p>Bank: Bank Alinma</p><p className="text-blue-900 text-[11px]">SA2805000068206829136000</p><p className="text-[10px]">VAT No: 314243545400003</p></div></div>
+                                <div className="text-left font-black">
+                                    <p className="text-[13px] text-blue-900 mb-1 uppercase">Bank Info:</p>
+                                    <div className="text-[12px] text-slate-600 leading-tight">
+                                        <p>Bank: Bank Alinma</p>
+                                        <p className="text-blue-900 text-[11px]">SA2805000068206829136000</p>
+                                        <p className="text-[10px]">VAT No: 314243545400003</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
