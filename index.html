@@ -6,21 +6,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
-        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; margin: 0; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; }
+        
         @media print {
-            @page { size: A4; margin: 0 !important; }
+            @page { 
+                size: A4; 
+                margin: 0 !important; 
+            }
+            html, body {
+                height: 100%;
+                overflow: hidden;
+            }
             .no-print { display: none !important; }
             .print-page {
-                width: 210mm; height: 296mm; position: relative; overflow: hidden;
+                width: 210mm !important;
+                height: 297mm !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                position: relative;
+                overflow: hidden;
                 background-image: url('letterhead.jpg') !important;
                 background-size: 100% 100% !important;
-                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
             }
         }
+
         .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
-        .page-box { width: 210mm; height: 297mm; background: white; background-image: url('letterhead.jpg'); background-size: 100% 100%; position: relative; }
-        .control-btn { background: #e2e8f0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: bold; cursor: pointer; border: 1px solid #cbd5e1; }
-        .control-btn:active { background: #cbd5e1; transform: scale(0.9); }
+        .page-box { 
+            width: 210mm; 
+            height: 297mm; 
+            background: white; 
+            background-image: url('letterhead.jpg'); 
+            background-size: 100% 100%; 
+            position: relative; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
@@ -56,7 +79,13 @@
                 let ni = { ...it, [field]: numericVal };
                 
                 if (field === 'disc' || field === 'price' || field === 'qty') {
-                    ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
+                    if (ni.taxInclusive) {
+                        let basePrice = ni.price / 1.15;
+                        let discountedBase = (basePrice * ni.qty) * (1 - ni.disc/100);
+                        ni.net = discountedBase * 1.15;
+                    } else {
+                        ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
+                    }
                 } else if (field === 'net') {
                     let totalBeforeDisc = ni.price * ni.qty;
                     if (totalBeforeDisc > 0) {
@@ -80,26 +109,27 @@
 
         return (
             <div className="flex flex-col lg:flex-row">
+                {/* لوحة التحكم الجانبية */}
                 <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     <div className="space-y-4 mb-6 text-right">
                         <div>
-                           <label className="text-[10px] font-bold text-gray-400">العميل</label>
+                           <label className="text-[10px] font-bold text-gray-400 uppercase">Customer Name</label>
                            <input 
                             type="text" 
                             className="w-full p-2 border rounded text-sm font-bold text-right outline-none focus:ring-2 focus:ring-blue-500" 
                             value={client} 
                             onChange={e => setClient(e.target.value)} 
-                            onFocus={(e) => e.target.select()} // تم إضافة هذه الخاصية لمسح النص عند الضغط
+                            onFocus={(e) => e.target.select()}
                            />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div><label className="text-[10px] font-bold text-gray-400">رقم العرض</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={ref} onChange={e => setRef(e.target.value)} /></div>
-                            <div><label className="text-[10px] font-bold text-gray-400">التاريخ</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={date} onChange={e => setDate(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400">Ref No.</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={ref} onChange={e => setRef(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400">Date</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={date} onChange={e => setDate(e.target.value)} /></div>
                         </div>
                     </div>
                     
-                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 tracking-wider">🖨️ طباعة العرض</button>
+                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 tracking-wider hover:bg-blue-800 transition-colors">🖨️ Print Quotation</button>
 
                     <div className="border-t pt-4">
                         {items.map(it => (
@@ -124,6 +154,7 @@
                     </div>
                 </div>
 
+                {/* عرض الصفحة للطباعة */}
                 <div className="flex-1 screen-view">
                     <div className="page-box print-page">
                         <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col font-black" dir="ltr">
@@ -136,7 +167,7 @@
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">From :</span><span className="text-slate-700 text-lg">Rawai Aljamal Alhaditha Co.</span></div>
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">Subject:</span><span className="text-xl underline decoration-blue-900 underline-offset-4">SK booster</span></div>
                             </div>
-                            <table className="w-full text-[14px] border-collapse text-center">
+                            <table className="w-full text-[13px] border-collapse text-center">
                                 <thead>
                                     <tr className="bg-blue-900 text-white">
                                         <th className="p-2 border border-blue-800 text-left">Description</th>
@@ -151,13 +182,16 @@
                                 <tbody>
                                     {items.map(it => (
                                         <tr key={it.id} className="border-b h-10 text-slate-800">
-                                            <td className="text-left p-1">{it.desc} {it.taxInclusive && <span className="text-[8px] text-slate-400 block">(Tax Incl.)</span>}</td>
-                                            <td>{it.price}</td>
+                                            <td className="text-left p-1">{it.desc} {it.taxInclusive && <span className="text-[8px] text-slate-400 block tracking-tight">(VAT Included)</span>}</td>
+                                            <td>{it.price.toLocaleString()}</td>
                                             <td className="bg-slate-50">{it.qty || '-'}</td>
                                             <td>{it.qty ? (it.price * it.qty).toLocaleString() : '-'}</td>
                                             <td className="text-red-600">{it.qty && it.disc ? Math.round(it.disc) + "%" : "-"}</td>
                                             <td className="text-blue-900">{it.qty ? Math.round(it.net).toLocaleString() : '-'}</td>
-                                            <td className="text-green-700">{it.qty && it.bonus ? it.qty + "+" + it.bonus : (it.qty ? it.qty : "-")}</td>
+                                            <td className="text-green-700">
+                                                {/* تم التعديل: إذا كان البونص صفر، العمود يظهر فارغاً تماماً */}
+                                                {(it.qty > 0 && it.bonus > 0) ? `${it.qty}+${it.bonus}` : ""}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
