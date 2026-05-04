@@ -13,28 +13,39 @@
                 size: A4; 
                 margin: 0 !important; 
             }
-            html, body {
-                height: 100%;
-                overflow: hidden;
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .no-print { display: none !important; }
+            .screen-view {
+                padding: 0 !important;
+                background: none !important;
+                display: block !important;
+            }
             .print-page {
                 width: 210mm !important;
                 height: 297mm !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                page-break-after: always;
                 position: relative;
                 overflow: hidden;
+            }
+            /* تأكيد ظهور خلفية الورق الرسمي عند الطباعة */
+            .page-box {
                 background-image: url('letterhead.jpg') !important;
                 background-size: 100% 100% !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                page-break-after: avoid !important;
-                page-break-before: avoid !important;
+                background-repeat: no-repeat !important;
             }
         }
 
-        .screen-view { background: #334155; display: flex; justify-content: center; padding: 10px 0; min-height: 100vh; }
+        .screen-view { background: #334155; display: flex; justify-content: center; padding: 20px 0; min-height: 100vh; }
         .page-box { 
             width: 210mm; 
             height: 297mm; 
@@ -42,7 +53,7 @@
             background-image: url('letterhead.jpg'); 
             background-size: 100% 100%; 
             position: relative; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
         }
     </style>
 </head>
@@ -107,14 +118,18 @@
         const vat = (boxItem && boxItem.qty > 0) ? (boxItem.net * 0.15) : 0;
         const finalTotal = totalNetAll + vat;
 
+        const handlePrint = () => {
+            window.print();
+        };
+
         return (
             <div className="flex flex-col lg:flex-row">
-                {/* لوحة التحكم الجانبية */}
+                {/* Control Panel */}
                 <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     <div className="space-y-4 mb-6 text-right">
                         <div>
-                           <label className="text-[10px] font-bold text-gray-400 uppercase">Customer Name</label>
+                           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">اسم العميل</label>
                            <input 
                             type="text" 
                             className="w-full p-2 border rounded text-sm font-bold text-right outline-none focus:ring-2 focus:ring-blue-500" 
@@ -124,37 +139,37 @@
                            />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div><label className="text-[10px] font-bold text-gray-400">Ref No.</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={ref} onChange={e => setRef(e.target.value)} /></div>
-                            <div><label className="text-[10px] font-bold text-gray-400">Date</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={date} onChange={e => setDate(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400">رقم المرجع</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={ref} onChange={e => setRef(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400">التاريخ</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={date} onChange={e => setDate(e.target.value)} /></div>
                         </div>
                     </div>
                     
-                    <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 tracking-wider hover:bg-blue-800 transition-colors">🖨️ Print Quotation</button>
+                    <button onClick={handlePrint} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg mb-6 tracking-wider hover:bg-blue-800 transition-all active:scale-95">🖨️ طباعة العرض</button>
 
                     <div className="border-t pt-4">
                         {items.map(it => (
                             <div key={it.id} className="mb-4 p-3 bg-slate-50 border rounded-lg text-right text-[11px]">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className={`text-[8px] px-1 rounded ${it.taxInclusive ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    <span className={`text-[8px] px-1 rounded font-bold ${it.taxInclusive ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                                         {it.taxInclusive ? 'شامل الضريبة' : '+ ضريبة 15%'}
                                     </span>
                                     <p className="font-black text-slate-700">{it.desc}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mb-2">
-                                    <input type="number" value={it.price} className="p-1 border rounded text-center outline-none" onChange={e => updateItem(it.id, 'price', e.target.value)} onFocus={(e) => e.target.select()} />
-                                    <input type="number" value={it.qty || ""} className="p-1 border rounded text-center outline-none" onChange={e => updateItem(it.id, 'qty', e.target.value)} onFocus={(e) => e.target.select()} />
+                                    <div className="text-center"><label className="text-[8px] block">السعر</label><input type="number" value={it.price} className="w-full p-1 border rounded text-center outline-none" onChange={e => updateItem(it.id, 'price', e.target.value)} onFocus={(e) => e.target.select()} /></div>
+                                    <div className="text-center"><label className="text-[8px] block">الكمية</label><input type="number" value={it.qty || ""} className="w-full p-1 border rounded text-center outline-none font-bold text-blue-900" onChange={e => updateItem(it.id, 'qty', e.target.value)} onFocus={(e) => e.target.select()} /></div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-1.5 font-bold">
                                     <div className="text-center"><label className="text-[8px] block">خصم %</label><input type="number" value={Math.round(it.disc)} className="w-full border rounded text-center outline-none" onChange={e => updateItem(it.id, 'disc', e.target.value)} onFocus={(e) => e.target.select()} /></div>
                                     <div className="text-center"><label className="text-[8px] block">الصافي</label><input type="number" value={Math.round(it.net)} className="w-full border rounded text-center outline-none" onChange={e => updateItem(it.id, 'net', e.target.value)} onFocus={(e) => e.target.select()} /></div>
-                                    <div className="text-center"><label className="text-[8px] block">بونص</label><input type="number" value={it.bonus || 0} className="w-full border rounded text-center outline-none" onChange={e => updateItem(it.id, 'bonus', e.target.value)} onFocus={(e) => e.target.select()} /></div>
+                                    <div className="text-center"><label className="text-[8px] block">بونص</label><input type="number" value={it.bonus || 0} className="w-full border rounded text-center outline-none bg-green-50" onChange={e => updateItem(it.id, 'bonus', e.target.value)} onFocus={(e) => e.target.select()} /></div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* عرض الصفحة للطباعة */}
+                {/* Print View Container */}
                 <div className="flex-1 screen-view">
                     <div className="page-box print-page">
                         <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col font-black" dir="ltr">
@@ -167,6 +182,7 @@
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">From :</span><span className="text-slate-700 text-lg">Rawai Aljamal Alhaditha Co.</span></div>
                                 <div className="flex items-center gap-4"><span className="text-blue-900 min-w-[65px]">Subject:</span><span className="text-xl underline decoration-blue-900 underline-offset-4">SK booster</span></div>
                             </div>
+                            
                             <table className="w-full text-[13px] border-collapse text-center">
                                 <thead>
                                     <tr className="bg-blue-900 text-white">
@@ -182,14 +198,13 @@
                                 <tbody>
                                     {items.map(it => (
                                         <tr key={it.id} className="border-b h-10 text-slate-800">
-                                            <td className="text-left p-1">{it.desc} {it.taxInclusive && <span className="text-[8px] text-slate-400 block tracking-tight">(VAT Included)</span>}</td>
+                                            <td className="text-left p-1">{it.desc} {it.taxInclusive && <span className="text-[8px] text-slate-400 block tracking-tight font-normal">(VAT Included)</span>}</td>
                                             <td>{it.price.toLocaleString()}</td>
                                             <td className="bg-slate-50">{it.qty || '-'}</td>
                                             <td>{it.qty ? (it.price * it.qty).toLocaleString() : '-'}</td>
                                             <td className="text-red-600">{it.qty && it.disc ? Math.round(it.disc) + "%" : "-"}</td>
                                             <td className="text-blue-900">{it.qty ? Math.round(it.net).toLocaleString() : '-'}</td>
                                             <td className="text-green-700">
-                                                {/* تم التعديل: إذا كان البونص صفر، العمود يظهر فارغاً تماماً */}
                                                 {(it.qty > 0 && it.bonus > 0) ? `${it.qty}+${it.bonus}` : ""}
                                             </td>
                                         </tr>
