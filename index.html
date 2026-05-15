@@ -56,7 +56,6 @@
         }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* Custom styles for increment buttons */
         .qty-btn {
             transition: all 0.2s ease;
             user-select: none;
@@ -78,6 +77,7 @@
         const [client, setClient] = useState("أحمد مسلم"); 
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [ref, setRef] = useState("");
+        const [notes, setNotes] = useState(""); // ملاحظات جديدة
 
         useEffect(() => {
             const cleanDate = date.replace(/-/g, "");
@@ -173,6 +173,16 @@
                         <div className="grid grid-cols-2 gap-2">
                             <div><label className="text-[10px] font-bold text-gray-400">رقم المرجع</label><input type="text" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={ref} onChange={e => setRef(e.target.value)} onFocus={(e) => e.target.select()} /></div>
                             <div><label className="text-[10px] font-bold text-gray-400">التاريخ</label><input type="date" className="w-full p-2 border rounded text-sm text-right font-bold outline-none" value={date} onChange={e => setDate(e.target.value)} /></div>
+                        </div>
+                        {/* خانة الملاحظات في التحكم */}
+                        <div>
+                           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ملاحظات إضافية (تظهر إذا كتبت)</label>
+                           <textarea 
+                            className="w-full p-2 border rounded text-sm font-bold text-right outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none" 
+                            value={notes} 
+                            placeholder="اكتب ملاحظاتك هنا..."
+                            onChange={e => setNotes(e.target.value)} 
+                           />
                         </div>
                     </div>
                     
@@ -276,6 +286,14 @@
                                     })}
                                 </tbody>
                             </table>
+
+                            {/* عرض الملاحظات في النتيجة - تظهر فقط إذا كانت غير فارغة */}
+                            {notes.trim() && (
+                                <div className="mt-4 p-3 border-r-4 border-blue-900 bg-slate-50">
+                                    <p className="text-[11px] text-blue-900 font-black underline mb-1">Notes / الملاحظات:</p>
+                                    <p className="text-[12px] text-slate-700 font-black whitespace-pre-wrap">{notes}</p>
+                                </div>
+                            )}
 
                             <div className="mt-4 flex justify-between items-start">
                                 <div className="flex flex-col gap-1">
