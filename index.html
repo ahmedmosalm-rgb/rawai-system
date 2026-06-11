@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Rawai System - أحمد مسلم</title>
+    <title>Rawai System - نظام روائع المتكامل</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
@@ -29,14 +29,14 @@
 
 <script type="text/babel">
     const { useState, useEffect } = React;
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwrJP-Bv6JS5UNJrhbKBwCKpXZGT7lOXrSODNcQeEW1b_0PR_03dLP6UXl-EGrggl9D/exec";
+    const GOOGLE_SHEET_URL = "استبدل_هذا_بالرابط_الخاص_بك"; // ضع رابط Web App الخاص بك هنا
 
     const App = () => {
         const [client, setClient] = useState("أحمد مسلم");
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [ref, setRef] = useState("");
         const [notes, setNotes] = useState("");
-        const [isSaving, setIsSaving] = useState(false);
+        const [status, setStatus] = useState(null); // 'idle', 'loading', 'success', 'error'
 
         useEffect(() => { const cleanDate = date.replace(/-/g, ""); setRef(`${cleanDate}-01`); }, [date]);
 
@@ -68,17 +68,26 @@
         };
 
         const handleSave = async () => {
-            setIsSaving(true);
+            setStatus('loading');
             const payload = { client, date, ref, notes, items, total: displayFinalTotal };
             try {
-                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                await fetch(GOOGLE_SHEET_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload) 
+                });
+                setStatus('success');
                 window.print();
-            } catch (err) { alert("خطأ في الاتصال بالسيرفر"); } finally { setIsSaving(false); }
+            } catch (err) { 
+                setStatus('error'); 
+            } finally {
+                setTimeout(() => setStatus(null), 3000);
+            }
         };
 
         const adjustQty = (id, amt) => { const item = items.find(i => i.id === id); updateItem(id, 'qty', Math.max(0, (item.qty || 0) + amt)); };
         const calculateVatForItem = (i) => i.qty <= 0 ? 0 : (i.taxInclusive ? (i.net - (i.net / 1.15)) : (i.net * 0.15));
-        const totalVat = items.reduce((acc, i) => acc + calculateVatForItem(i), 0);
         const displayFinalTotal = items.reduce((acc, i) => i.qty <= 0 ? acc : (i.taxInclusive ? (acc + i.net) : (acc + i.net + (i.net * 0.15))), 0);
         const fmt = (num) => isNaN(num) ? "0" : new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(num);
 
@@ -87,15 +96,18 @@
                 <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     <input className="w-full p-2 border mb-2 text-right" value={client} onChange={e => setClient(e.target.value)} />
-                    <button onClick={handleSave} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg mb-6">
-                        {isSaving ? "جاري..." : "حفظ وترحيل وطباعة"}
+                    <button onClick={handleSave} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg mb-6 shadow-xl hover:bg-blue-800">
+                        {status === 'loading' ? "جاري الترحيل..." : "حفظ وترحيل وطباعة"}
                     </button>
+                    {status === 'success' && <div className="text-green-600 text-center mb-4 font-bold">✓ تم الترحيل بنجاح</div>}
+                    {status === 'error' && <div className="text-red-600 text-center mb-4 font-bold">✕ خطأ في الاتصال</div>}
+                    
                     {items.map(it => (
                         <div key={it.id} className="mb-4 p-3 border rounded">
                             <p className="font-bold text-sm">{it.desc}</p>
                             <div className="grid grid-cols-2 gap-2 mt-2">
-                                <input type="number" placeholder="كمية" onChange={e => updateItem(it.id, 'qty', e.target.value)} className="p-1 border text-sm text-center" />
-                                <input type="number" placeholder="خصم" onChange={e => updateItem(it.id, 'disc', e.target.value)} className="p-1 border text-sm text-center" />
+                                <input type="number" placeholder="كمية" value={it.qty || ""} onChange={e => updateItem(it.id, 'qty', e.target.value)} className="p-1 border text-sm text-center" />
+                                <input type="number" placeholder="خصم" value={it.disc || ""} onChange={e => updateItem(it.id, 'disc', e.target.value)} className="p-1 border text-sm text-center" />
                             </div>
                         </div>
                     ))}
