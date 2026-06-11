@@ -7,25 +7,18 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
         body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; }
-        
         @media print {
-            @page { size: A4 portrait; margin: 0 !important; }
-            body, html { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
+            @page { size: A4; margin: 0 !important; }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print { display: none !important; }
-            .screen-view { padding: 0 !important; background: white !important; display: block !important; }
-            .print-page { 
-                width: 210mm !important; height: 297mm !important; 
-                margin: 0 !important; position: relative; box-shadow: none !important;
-                page-break-after: avoid !important; overflow: hidden !important;
-            }
+            .screen-view { padding: 0 !important; background: none !important; display: block !important; }
+            .print-page { width: 210mm !important; height: 297mm !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always; position: relative; overflow: hidden; }
         }
-
-        .screen-view { background: #334155; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
-        .page-box { 
-            width: 210mm; min-height: 297mm; background: white; 
-            position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6);
-        }
+        .screen-view { background: #334155; display: flex; justify-content: center; padding: 20px 0; min-height: 100vh; }
+        .page-box { width: 210mm; height: 297mm; background: white; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .qty-btn { transition: all 0.2s ease; user-select: none; }
+        .qty-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -36,82 +29,89 @@
 
 <script type="text/babel">
     const { useState, useEffect } = React;
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyDJLeEXWYsLo1rjE-HY6qfOy1gmQ1VSXMDGcn7wZGpwHqr6kyJbIfCjLjvkqv17NlKCQ/exec";
+    const GOOGLE_SHEET_URL = "استبدل_هذا_بالرابط_الخاص_بك";
 
     const App = () => {
-        const [client, setClient] = useState("أحمد مسلم"); 
-        const [ref, setRef] = useState("REF-001");
-        const [notes, setNotes] = useState(""); 
-        const [saving, setSaving] = useState(false);
+        const [client, setClient] = useState("أحمد مسلم");
+        const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+        const [ref, setRef] = useState("");
+        const [notes, setNotes] = useState("");
+        const [isSaving, setIsSaving] = useState(false);
+
+        useEffect(() => { const cleanDate = date.replace(/-/g, ""); setRef(`${cleanDate}-01`); }, [date]);
+
         const [items, setItems] = useState([
-            { id: 1, desc: "SK booster box", price: 1200, qty: 0, disc: 0, bonus: 0 },
-            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0 },
-            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: 0 },
-            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: 0 },
-            { id: 5, desc: "SK repairing gel 50 gm", price: 230, qty: 0, disc: 0, bonus: 0 }
+            { id: 1, desc: "SK booster box", price: 1200, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: false },
+            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true },
+            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true },
+            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true },
+            { id: 5, desc: "SK repairing gel 50 gm", price: 230, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true }
         ]);
 
         const updateItem = (id, field, val) => {
-            setItems(prev => prev.map(it => it.id === id ? { ...it, [field]: parseFloat(val) || 0 } : it));
+            setItems(prev => prev.map(it => {
+                if (it.id !== id) return it;
+                let numericVal = (['bonus', 'qty', 'disc', 'price', 'net'].includes(field)) ? (parseFloat(val) || 0) : val;
+                if (numericVal < 0) numericVal = 0;
+                let ni = { ...it, [field]: numericVal };
+                if (['disc', 'price', 'qty'].includes(field)) {
+                    if (ni.taxInclusive) {
+                        let basePrice = ni.price / 1.15;
+                        let discountedBase = (basePrice * ni.qty) * (1 - ni.disc/100);
+                        ni.net = discountedBase * 1.15;
+                    } else {
+                        ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
+                    }
+                }
+                return ni;
+            }));
         };
 
-        const handleSaveAndPrint = async () => {
-            setSaving(true);
-            const payload = {
-                ref, date: new Date().toLocaleDateString(), client, notes,
-                item_1_qty: items[0].qty, item_1_bonus: items[0].bonus, item_1_disc: items[0].disc,
-                item_2_qty: items[1].qty, item_2_bonus: items[1].bonus, item_2_disc: items[1].disc,
-                item_3_qty: items[2].qty, item_3_bonus: items[2].bonus, item_3_disc: items[2].disc,
-                item_4_qty: items[3].qty, item_4_bonus: items[3].bonus, item_4_disc: items[3].disc,
-                item_5_qty: items[4].qty, item_5_bonus: items[4].bonus, item_5_disc: items[4].disc,
-                subtotal: 0, vat: 0, total: 0
-            };
-
+        const handleSave = async () => {
+            setIsSaving(true);
+            const payload = { client, date, ref, notes, items, total: displayFinalTotal };
             try {
                 await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
                 window.print();
-            } catch (error) {
-                console.error(error);
-                alert("حدث خطأ أثناء الترحيل");
-            } finally {
-                setSaving(false);
-            }
+            } catch (err) { alert("خطأ في الاتصال بالسيرفر"); } finally { setIsSaving(false); }
         };
 
+        const adjustQty = (id, amt) => { const item = items.find(i => i.id === id); updateItem(id, 'qty', Math.max(0, (item.qty || 0) + amt)); };
+        const calculateVatForItem = (i) => i.qty <= 0 ? 0 : (i.taxInclusive ? (i.net - (i.net / 1.15)) : (i.net * 0.15));
+        const totalVat = items.reduce((acc, i) => acc + calculateVatForItem(i), 0);
+        const displayFinalTotal = items.reduce((acc, i) => i.qty <= 0 ? acc : (i.taxInclusive ? (acc + i.net) : (acc + i.net + (i.net * 0.15))), 0);
+        const fmt = (num) => isNaN(num) ? "0" : new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(num);
+
         return (
-            <div className="flex flex-col lg:flex-row min-h-screen">
-                <div className="lg:w-96 p-6 bg-white border-l no-print h-screen overflow-y-auto">
-                    <h2 className="text-xl font-bold mb-4">لوحة التحكم</h2>
-                    <input className="w-full p-2 border mb-2" value={client} onChange={e => setClient(e.target.value)} placeholder="اسم العميل" />
-                    <input className="w-full p-2 border mb-4" value={ref} onChange={e => setRef(e.target.value)} placeholder="رقم المرجع" />
-                    
+            <div className="flex flex-col lg:flex-row">
+                <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
+                    <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
+                    <input className="w-full p-2 border mb-2 text-right" value={client} onChange={e => setClient(e.target.value)} />
+                    <button onClick={handleSave} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg mb-6">
+                        {isSaving ? "جاري..." : "حفظ وترحيل وطباعة"}
+                    </button>
                     {items.map(it => (
-                        <div key={it.id} className="mb-4 p-2 border rounded">
-                            <p className="text-xs font-bold">{it.desc}</p>
-                            <div className="grid grid-cols-3 gap-1">
-                                <input type="number" placeholder="كمية" onChange={e => updateItem(it.id, 'qty', e.target.value)} className="p-1 border text-sm" />
-                                <input type="number" placeholder="خصم %" onChange={e => updateItem(it.id, 'disc', e.target.value)} className="p-1 border text-sm" />
-                                <input type="number" placeholder="بونص" onChange={e => updateItem(it.id, 'bonus', e.target.value)} className="p-1 border text-sm" />
+                        <div key={it.id} className="mb-4 p-3 border rounded">
+                            <p className="font-bold text-sm">{it.desc}</p>
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <input type="number" placeholder="كمية" onChange={e => updateItem(it.id, 'qty', e.target.value)} className="p-1 border text-sm text-center" />
+                                <input type="number" placeholder="خصم" onChange={e => updateItem(it.id, 'disc', e.target.value)} className="p-1 border text-sm text-center" />
                             </div>
                         </div>
                     ))}
-                    
-                    <button onClick={handleSaveAndPrint} className="w-full bg-blue-900 text-white py-3 rounded font-bold mt-4 hover:bg-blue-800 transition-colors">
-                        {saving ? "جاري..." : "حفظ وطباعة"}
-                    </button>
                 </div>
-                
                 <div className="flex-1 screen-view">
                     <div className="page-box print-page p-10">
                         <h1 className="text-2xl font-black text-center mb-10">عرض سعر</h1>
                         <p>العميل: {client}</p>
                         <p>المرجع: {ref}</p>
-                        <table className="w-full mt-6 border-collapse">
-                            <thead><tr className="bg-gray-100"><th className="border p-2">الصنف</th><th className="border p-2">الكمية</th><th className="border p-2">الخصم</th><th className="border p-2">البونص</th></tr></thead>
-                            <tbody>{items.map(it => (
-                                <tr key={it.id}><td className="border p-2">{it.desc}</td><td className="border p-2 text-center">{it.qty}</td><td className="border p-2 text-center">{it.disc}%</td><td className="border p-2 text-center">{it.bonus}</td></tr>
+                        <table className="w-full border-collapse mt-10">
+                            <thead><tr className="bg-blue-900 text-white"><th className="p-2">الصنف</th><th className="p-2">الكمية</th><th className="p-2">الإجمالي</th></tr></thead>
+                            <tbody>{items.filter(i => i.qty > 0).map(it => (
+                                <tr key={it.id} className="border-b"><td className="p-2">{it.desc}</td><td className="p-2 text-center">{it.qty}</td><td className="p-2 text-center">{fmt(it.net)}</td></tr>
                             ))}</tbody>
                         </table>
+                        <div className="mt-10 font-black text-xl">الإجمالي: {fmt(displayFinalTotal)} SR</div>
                     </div>
                 </div>
             </div>
