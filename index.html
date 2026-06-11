@@ -13,12 +13,10 @@
             body, html { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
             .no-print { display: none !important; }
             .screen-view { padding: 0 !important; background: white !important; display: block !important; }
-            .page-box { 
-                box-shadow: none !important; 
-                width: 210mm !important; 
-                height: 297mm !important; 
-                margin: 0 !important;
-                position: relative;
+            .print-page { 
+                width: 210mm !important; height: 297mm !important; 
+                margin: 0 !important; position: relative; box-shadow: none !important;
+                page-break-after: avoid !important; overflow: hidden !important;
             }
         }
 
@@ -26,7 +24,6 @@
         .page-box { 
             width: 210mm; min-height: 297mm; background: white; 
             position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6);
-            padding: 40px;
         }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
@@ -38,7 +35,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
 <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyDJLeEXWYsLo1rjE-HY6qfOy1gmQ1VSXMDGcn7wZGpwHqr6kyJbIfCjLjvkqv17NlKCQ/exec";
 
     const App = () => {
@@ -46,7 +43,6 @@
         const [ref, setRef] = useState("REF-001");
         const [notes, setNotes] = useState(""); 
         const [saving, setSaving] = useState(false);
-
         const [items, setItems] = useState([
             { id: 1, desc: "SK booster box", price: 1200, qty: 0, disc: 0, bonus: 0 },
             { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0 },
@@ -67,7 +63,7 @@
                 item_2_qty: items[1].qty, item_2_bonus: items[1].bonus, item_2_disc: items[1].disc,
                 item_3_qty: items[2].qty, item_3_bonus: items[2].bonus, item_3_disc: items[2].disc,
                 item_4_qty: items[3].qty, item_4_bonus: items[3].bonus, item_4_disc: items[3].disc,
-                item_5_qty: items[4].qty, item_5_bonus: items[5].bonus, item_5_disc: items[4].disc,
+                item_5_qty: items[4].qty, item_5_bonus: items[4].bonus, item_5_disc: items[4].disc,
                 subtotal: 0, vat: 0, total: 0
             };
 
@@ -75,6 +71,7 @@
                 await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
                 window.print();
             } catch (error) {
+                console.error(error);
                 alert("حدث خطأ أثناء الترحيل");
             } finally {
                 setSaving(false);
@@ -99,13 +96,13 @@
                         </div>
                     ))}
                     
-                    <button onClick={handleSaveAndPrint} className="w-full bg-blue-900 text-white py-3 rounded font-bold mt-4">
+                    <button onClick={handleSaveAndPrint} className="w-full bg-blue-900 text-white py-3 rounded font-bold mt-4 hover:bg-blue-800 transition-colors">
                         {saving ? "جاري..." : "حفظ وطباعة"}
                     </button>
                 </div>
                 
                 <div className="flex-1 screen-view">
-                    <div className="page-box">
+                    <div className="page-box print-page p-10">
                         <h1 className="text-2xl font-black text-center mb-10">عرض سعر</h1>
                         <p>العميل: {client}</p>
                         <p>المرجع: {ref}</p>
