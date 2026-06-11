@@ -74,7 +74,7 @@
 <script type="text/babel">
     const { useState, useEffect } = React;
     
-    // رابط جوجل شيت الخاص بأحمد مسلم مدمج مباشرة
+    // رابط جوجل شيت مدمج مباشرة
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyDJLeEXWYsLo1rjE-HY6qfOy1gmQ1VSXMDGcn7wZGpwHqr6kyJbIfCjLjvkqv17NlKCQ/exec";
 
     const App = () => {
@@ -83,7 +83,7 @@
         const [ref, setRef] = useState("");
         const [notes, setNotes] = useState(""); 
         
-        // حالات الترحيل لجوجل شيت
+        // حالات الترحيل والمؤشرات
         const [saving, setSaving] = useState(false);
         const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', null
         const [errorMessage, setErrorMessage] = useState("");
@@ -163,21 +163,26 @@
             setSaveStatus(null);
             setErrorMessage("");
 
-            // تجهيز البيانات لإرسالها في الطلب
+            // تجهيز البيانات لإرسالها في الطلب بما يشمل نسب الخصومات
             const payload = {
                 ref: ref,
                 date: date,
                 client: client,
                 item_1_qty: items.find(i => i.id === 1)?.qty || 0,
                 item_1_bonus: items.find(i => i.id === 1)?.bonus || 0,
+                item_1_disc: items.find(i => i.id === 1)?.disc || 0,
                 item_2_qty: items.find(i => i.id === 2)?.qty || 0,
                 item_2_bonus: items.find(i => i.id === 2)?.bonus || 0,
+                item_2_disc: items.find(i => i.id === 2)?.disc || 0,
                 item_3_qty: items.find(i => i.id === 3)?.qty || 0,
                 item_3_bonus: items.find(i => i.id === 3)?.bonus || 0,
+                item_3_disc: items.find(i => i.id === 3)?.disc || 0,
                 item_4_qty: items.find(i => i.id === 4)?.qty || 0,
                 item_4_bonus: items.find(i => i.id === 4)?.bonus || 0,
+                item_4_disc: items.find(i => i.id === 4)?.disc || 0,
                 item_5_qty: items.find(i => i.id === 5)?.qty || 0,
                 item_5_bonus: items.find(i => i.id === 5)?.bonus || 0,
+                item_5_disc: items.find(i => i.id === 5)?.disc || 0,
                 subtotal: (displayFinalTotal - totalVat).toFixed(3),
                 vat: totalVat.toFixed(3),
                 total: displayFinalTotal.toFixed(3),
@@ -185,17 +190,15 @@
             };
 
             try {
-                // إرسال الطلب بشكل صامت للـ Web App
                 await fetch(GOOGLE_SHEET_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // يتجنب مشاكل CORS مع خوادم جوجل
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'text/plain'
                     },
                     body: JSON.stringify(payload)
                 });
                 
-                // بما أن وضع no-cors لا يرجع استجابة مرئية، نعتبر نجاح الطلب علامة على اكتماله
                 setSaveStatus('success');
                 setTimeout(() => setSaveStatus(null), 4000);
             } catch (error) {
@@ -214,7 +217,6 @@
                 <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
                     
-                    {}
                     <div className="space-y-4 mb-6 text-right">
                         <div>
                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">اسم العميل</label>
@@ -245,7 +247,7 @@
                     <div className="space-y-2 mb-6">
                         <button onClick={() => window.print()} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg shadow-lg tracking-wider hover:bg-blue-800 transition-all active:scale-95">🖨️ طباعة العرض</button>
                         
-                        {/* زرار الحفظ الذكي والمباشر لجوجل شيت */}
+                        {/* زرار الحفظ لجوجل شيت مباشرة */}
                         <button 
                             onClick={handleSaveToSheet} 
                             disabled={saving}
@@ -279,7 +281,7 @@
                         </button>
                     </div>
 
-                    {/* تنبيه الخطأ البديل عن الـ alert */}
+                    {/* تنبيه الخطأ الجانبي */}
                     {saveStatus === 'error' && (
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs text-right leading-relaxed animate-pulse">
                             <strong>عذراً، حدث خطأ أثناء الترحيل:</strong>
@@ -287,7 +289,7 @@
                         </div>
                     )}
 
-                    {}
+                    {/* Item List Editors */}
                     <div className="border-t pt-4">
                         {items.map(it => (
                             <div key={it.id} className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-xl text-right text-[11px] shadow-sm">
@@ -336,7 +338,6 @@
 
                 {/* Print View Container */}
                 <div className="flex-1 screen-view">
-                    {}
                     <div className="page-box print-page">
                         <div className="absolute top-[4.8cm] left-[1.5cm] right-[1.5cm] bottom-[5.2cm] flex flex-col font-black" dir="ltr">
                             <div className="flex justify-between items-center mb-6 text-[15px]">
@@ -395,7 +396,6 @@
                                 </div>
                             )}
 
-                            {}
                             <div className="mt-4 flex justify-between items-start">
                                 <div className="flex flex-col gap-1">
                                     <p className="text-[10px] text-blue-900 font-black text-center uppercase tracking-tighter">SK booster box system</p>
@@ -413,7 +413,7 @@
                                     </div>
                                 </div>
 
-                                <div className="w-80 bg-blue-900 text-white p-4 rounded-2xl shadow-lg font-black text-left">
+                                <div className="w-80 bg-blue-900 text-white p-4 rounded-2xl shadow-lg font-black">
                                     <div className="flex justify-between text-[12px] opacity-80 mb-0.5"><span>Subtotal (Excl. VAT):</span><span>{fmt(displayFinalTotal - totalVat)} SR</span></div>
                                     <div className="flex justify-between text-[12px] text-red-300 font-bold mb-1.5"><span>Total VAT (15%):</span><span>{fmt(totalVat)} SR</span></div>
                                     <div className="flex justify-between font-black text-2xl border-t border-blue-800 pt-2"><span>TOTAL:</span><span>{fmt(displayFinalTotal)} SR</span></div>
