@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rawai System - نظام روائع المتكامل</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -12,56 +13,52 @@
             body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print { display: none !important; }
             .screen-view { padding: 0 !important; background: none !important; display: block !important; }
-            .print-page { width: 210mm !important; height: 297mm !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always; position: relative; overflow: hidden; }
+            .print-page { width: 210mm !important; height: 297mm !important; padding: 10mm !important; margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always; position: relative; }
         }
         .screen-view { background: #334155; display: flex; justify-content: center; padding: 20px 0; min-height: 100vh; }
-        .page-box { width: 210mm; height: 297mm; background: white; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
+        .page-box { width: 210mm; min-height: 297mm; background: white; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.3); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .qty-btn { transition: all 0.2s ease; user-select: none; }
-        .qty-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 <div id="root"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
 <script type="text/babel">
     const { useState, useEffect } = React;
-    const GOOGLE_SHEET_URL = "استبدل_هذا_بالرابط_الخاص_بك"; // ضع رابط Web App الخاص بك هنا
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwrJP-Bv6JS5UNJrhbKBwCKpXZGT7lOXrSODNcQeEW1b_0PR_03dLP6UXl-EGrggl9D/exec";
 
     const App = () => {
-        const [client, setClient] = useState("أحمد مسلم");
+        const [client, setClient] = useState("العميل الكريم");
         const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
         const [ref, setRef] = useState("");
-        const [notes, setNotes] = useState("");
-        const [status, setStatus] = useState(null); // 'idle', 'loading', 'success', 'error'
+        const [status, setStatus] = useState(null);
 
-        useEffect(() => { const cleanDate = date.replace(/-/g, ""); setRef(`${cleanDate}-01`); }, [date]);
+        useEffect(() => { setRef(`RAW-${Date.now().toString().slice(-6)}`); }, [date]);
 
         const [items, setItems] = useState([
-            { id: 1, desc: "SK booster box", price: 1200, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: false },
-            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true },
-            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true },
-            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true },
-            { id: 5, desc: "SK repairing gel 50 gm", price: 230, qty: 0, disc: 0, bonus: 0, net: 0, taxInclusive: true }
+            { id: 1, desc: "SK booster box", price: 1200, qty: 0, disc: 0, net: 0, taxInclusive: false },
+            { id: 2, desc: "SK Booster Serum 30 gm", price: 190, qty: 0, disc: 0, net: 0, taxInclusive: true },
+            { id: 3, desc: "SK Booster cleanser 150 gm", price: 125, qty: 0, disc: 0, net: 0, taxInclusive: true },
+            { id: 4, desc: "SK sun protector 30 gm", price: 185, qty: 0, disc: 0, net: 0, taxInclusive: true },
+            { id: 5, desc: "SK repairing gel 50 gm", price: 230, qty: 0, disc: 0, net: 0, taxInclusive: true }
         ]);
 
         const updateItem = (id, field, val) => {
             setItems(prev => prev.map(it => {
                 if (it.id !== id) return it;
-                let numericVal = (['bonus', 'qty', 'disc', 'price', 'net'].includes(field)) ? (parseFloat(val) || 0) : val;
+                let numericVal = (['qty', 'disc', 'price'].includes(field)) ? (parseFloat(val) || 0) : val;
                 if (numericVal < 0) numericVal = 0;
                 let ni = { ...it, [field]: numericVal };
-                if (['disc', 'price', 'qty'].includes(field)) {
-                    if (ni.taxInclusive) {
-                        let basePrice = ni.price / 1.15;
-                        let discountedBase = (basePrice * ni.qty) * (1 - ni.disc/100);
-                        ni.net = discountedBase * 1.15;
-                    } else {
-                        ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
-                    }
+                
+                if (ni.taxInclusive) {
+                    let basePrice = ni.price / 1.15;
+                    ni.net = (basePrice * ni.qty) * (1 - ni.disc/100) * 1.15;
+                } else {
+                    ni.net = (ni.price * ni.qty) * (1 - ni.disc/100);
                 }
                 return ni;
             }));
@@ -69,7 +66,7 @@
 
         const handleSave = async () => {
             setStatus('loading');
-            const payload = { client, date, ref, notes, items, total: displayFinalTotal };
+            const payload = { client, date, ref, items, total: displayFinalTotal };
             try {
                 await fetch(GOOGLE_SHEET_URL, { 
                     method: 'POST', 
@@ -86,44 +83,78 @@
             }
         };
 
-        const adjustQty = (id, amt) => { const item = items.find(i => i.id === id); updateItem(id, 'qty', Math.max(0, (item.qty || 0) + amt)); };
-        const calculateVatForItem = (i) => i.qty <= 0 ? 0 : (i.taxInclusive ? (i.net - (i.net / 1.15)) : (i.net * 0.15));
-        const displayFinalTotal = items.reduce((acc, i) => i.qty <= 0 ? acc : (i.taxInclusive ? (acc + i.net) : (acc + i.net + (i.net * 0.15))), 0);
-        const fmt = (num) => isNaN(num) ? "0" : new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(num);
+        const displayFinalTotal = items.reduce((acc, i) => acc + i.net, 0);
+        const fmt = (num) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
         return (
             <div className="flex flex-col lg:flex-row">
-                <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl">
+                <div className="lg:w-96 p-6 bg-white border-l no-print h-screen sticky top-0 overflow-y-auto shadow-2xl z-10">
                     <h2 className="font-black text-blue-900 mb-6 text-xl border-b pb-2 text-right">لوحة التحكم</h2>
-                    <input className="w-full p-2 border mb-2 text-right" value={client} onChange={e => setClient(e.target.value)} />
-                    <button onClick={handleSave} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg mb-6 shadow-xl hover:bg-blue-800">
-                        {status === 'loading' ? "جاري الترحيل..." : "حفظ وترحيل وطباعة"}
+                    <input className="w-full p-2 border mb-4 text-right rounded" value={client} onChange={e => setClient(e.target.value)} placeholder="اسم العميل" />
+                    
+                    <button onClick={handleSave} className="w-full bg-blue-900 text-white py-4 rounded-lg font-black text-lg mb-6 shadow-xl hover:bg-blue-800 transition-all">
+                        {status === 'loading' ? "جاري المعالجة..." : "حفظ وترحيل وطباعة"}
                     </button>
-                    {status === 'success' && <div className="text-green-600 text-center mb-4 font-bold">✓ تم الترحيل بنجاح</div>}
-                    {status === 'error' && <div className="text-red-600 text-center mb-4 font-bold">✕ خطأ في الاتصال</div>}
+                    
+                    {status === 'success' && <div className="text-green-600 text-center mb-4 font-bold p-2 bg-green-50 rounded">✓ تم الترحيل بنجاح</div>}
+                    {status === 'error' && <div className="text-red-600 text-center mb-4 font-bold p-2 bg-red-50 rounded">✕ خطأ في الاتصال</div>}
                     
                     {items.map(it => (
-                        <div key={it.id} className="mb-4 p-3 border rounded">
-                            <p className="font-bold text-sm">{it.desc}</p>
-                            <div className="grid grid-cols-2 gap-2 mt-2">
-                                <input type="number" placeholder="كمية" value={it.qty || ""} onChange={e => updateItem(it.id, 'qty', e.target.value)} className="p-1 border text-sm text-center" />
-                                <input type="number" placeholder="خصم" value={it.disc || ""} onChange={e => updateItem(it.id, 'disc', e.target.value)} className="p-1 border text-sm text-center" />
+                        <div key={it.id} className="mb-4 p-3 border rounded shadow-sm hover:border-blue-200">
+                            <p className="font-bold text-sm mb-2 text-gray-700">{it.desc}</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input type="number" placeholder="كمية" value={it.qty || ""} onChange={e => updateItem(it.id, 'qty', e.target.value)} className="p-2 border text-sm text-center rounded" />
+                                <input type="number" placeholder="خصم %" value={it.disc || ""} onChange={e => updateItem(it.id, 'disc', e.target.value)} className="p-2 border text-sm text-center rounded" />
                             </div>
                         </div>
                     ))}
                 </div>
+
                 <div className="flex-1 screen-view">
                     <div className="page-box print-page p-10">
-                        <h1 className="text-2xl font-black text-center mb-10">عرض سعر</h1>
-                        <p>العميل: {client}</p>
-                        <p>المرجع: {ref}</p>
-                        <table className="w-full border-collapse mt-10">
-                            <thead><tr className="bg-blue-900 text-white"><th className="p-2">الصنف</th><th className="p-2">الكمية</th><th className="p-2">الإجمالي</th></tr></thead>
-                            <tbody>{items.filter(i => i.qty > 0).map(it => (
-                                <tr key={it.id} className="border-b"><td className="p-2">{it.desc}</td><td className="p-2 text-center">{it.qty}</td><td className="p-2 text-center">{fmt(it.net)}</td></tr>
-                            ))}</tbody>
+                        <div className="flex justify-between items-start mb-10 border-b-2 border-blue-900 pb-5">
+                            <div>
+                                <h1 className="text-3xl font-black text-blue-900">عرض سعر</h1>
+                                <p className="text-gray-500 mt-2">التاريخ: {date}</p>
+                            </div>
+                            <div className="text-left font-bold">
+                                <p>المرجع: {ref}</p>
+                                <p className="text-blue-900">Rawai System</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-10">
+                            <h2 className="font-bold text-gray-600 mb-2">العميل:</h2>
+                            <p className="text-xl font-bold">{client}</p>
+                        </div>
+
+                        <table className="w-full border-collapse mb-10">
+                            <thead>
+                                <tr className="bg-blue-900 text-white">
+                                    <th className="p-3 text-right">الصنف</th>
+                                    <th className="p-3 text-center">الكمية</th>
+                                    <th className="p-3 text-center">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.filter(i => i.qty > 0).map(it => (
+                                    <tr key={it.id} className="border-b">
+                                        <td className="p-3">{it.desc}</td>
+                                        <td className="p-3 text-center">{it.qty}</td>
+                                        <td className="p-3 text-center">{fmt(it.net)} SR</td>
+                                    </tr>
+                                ))}
+                            </tbody>
                         </table>
-                        <div className="mt-10 font-black text-xl">الإجمالي: {fmt(displayFinalTotal)} SR</div>
+                        
+                        <div className="flex justify-end">
+                            <div className="bg-gray-100 p-6 rounded-lg w-64">
+                                <div className="flex justify-between text-xl font-black">
+                                    <span>الإجمالي:</span>
+                                    <span>{fmt(displayFinalTotal)} SR</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
